@@ -1,0 +1,233 @@
+import contextlib
+import json
+import re
+from collections.abc import AsyncGenerator
+from dataclasses import dataclass
+from typing import Any, Literal, cast, overload
+
+import asyncpg
+import sqlparse
+from asyncpg import Connection, Pool, Record
+
+from src.settings import settings
+
+
+@dataclass
+class ExecutableSQL:
+    sql: str
+    values: tuple[Any, ...]
+
+    def preview(self) -> str:
+        def replacer(match):
+            index = int(match.group()[1:]) - 1  # $1 → index 0
+            v = self.values[index]
+            return f"'{v}'" if isinstance(v, str) else str(v)
+
+        preview_string = re.sub(r"\$\d+", replacer, self.sql)
+
+        return sqlparse.format(
+            preview_string,
+            reindent=True,
+            keyword_case="upper",
+            use_space_around_operators=True,
+        )
+
+
+class DBManager:
+    def __init__(self):
+        self._pool: Pool | None = None
+
+    async def init_pool(self) -> None:
+
+        if self._pool is not None:
+            return
+
+        try:
+            pool: Pool = await asyncpg.create_pool(
+                user=settings.database.user.get_secret_value(),
+                password=settings.database.password.get_secret_value(),
+                host=settings.database.host.get_secret_value(),
+                database=settings.database.name.get_secret_value(),
+                port=settings.database.port,
+                min_size=settings.database.min_conn,
+                max_size=settings.database.max_conn,
+                # Senior Tip: Retire connections before they "rot"
+                max_inactive_connection_lifetime=300.0,  # 5 minutes
+                max_queries=1000,  # Recycle after 1000 uses
+                command_timeout=30.0,  # Don't let a single query hang your app,
+                init=self.set_codecs,
+            )
+
+            self._pool = pool
+            print("Database connection pool created.")
+        except Exception as e:
+            print(f"Error occured while creating the pool. {e!s}")
+            print(e)
+            raise e
+
+    async def close_pool(self) -> None:
+        try:
+            if self._pool:
+                await self._pool.close()
+                self._pool = None
+                print("Database connection pool closed.")
+        except Exception as e:
+            print(f"Error occured while closing the pool. {e!s}")
+
+    @staticmethod
+    async def set_codecs(connection: Connection) -> None:
+        """
+        Registers JSONB codecs so asyncpg can automatically
+        translate between Python dicts and Postgres jsonb.
+        """
+
+        await connection.set_type_codec(
+            "jsonb", encoder=json.dumps, decoder=json.loads, schema="pg_catalog"
+        )
+
+    @contextlib.asynccontextmanager
+    async def _get_connection(
+        self, connection: Connection | None
+    ) -> AsyncGenerator[Connection]:
+        """
+        ### Helper context manager to yield a connection.
+        - Case 1: If a connection is provided, yield that connection. This is useful when
+                we are already in a transaction and want to reuse the same connection.
+
+        - Case 2: If no connection is provided, acquire a new connection from the pool and yield it.
+
+        NOTE: The connection is released back to the pool automatically when the context manager exits, even if an exception occurs.
+        This ensures that we don't leak connections.
+        """
+        if connection is not None:
+            yield connection
+            print("Reusing the provided connection.")
+        else:
+            if self._pool is None:
+                raise RuntimeError("Pool is not initialized.")
+            async with self._pool.acquire() as conn:
+                yield cast(Connection, conn)
+
+    @contextlib.asynccontextmanager
+    async def transaction(self) -> AsyncGenerator[Connection]:
+        """
+        ### Helper context manager to manage transactions.
+        This context manager can be used to wrap a block of code in a transaction.
+        It will automatically commit the transaction if the block of code executes successfully,
+        or roll back the transaction if an exception occurs.
+        """
+        if self._pool is None:
+            raise ValueError("Initialize the pool to get connection object.")
+
+        async with self._pool.acquire() as conn, conn.transaction():
+            yield cast(Connection, conn)
+
+    @contextlib.asynccontextmanager
+    async def scoped_transaction(
+        self, connection: Connection | None = None
+    ) -> AsyncGenerator[Connection]:
+
+        if connection is not None:
+            yield connection
+        else:
+            async with self.transaction() as tconn:
+                yield tconn
+
+    @overload
+    async def execute(
+        self,
+        executable: ExecutableSQL,
+        fetch_returns: Literal["one"],
+        connection: Connection | None = None,
+    ) -> Record | None: ...
+
+    @overload
+    async def execute(
+        self,
+        executable: ExecutableSQL,
+        fetch_returns: Literal["all"],
+        connection: Connection | None = None,
+    ) -> list[Record]: ...
+
+    @overload
+    async def execute(
+        self,
+        executable: ExecutableSQL,
+        fetch_returns: Literal["none"],
+        connection: Connection | None = None,
+    ) -> str: ...
+
+    async def execute(
+        self,
+        executable: ExecutableSQL,
+        fetch_returns: Literal["all", "one", "none"],
+        connection: Connection | None = None,
+    ) -> list[Record] | Record | None | str:
+        """
+        This method executes a given SQL command and returns the result based on the specified fetch mode.
+        - `fetch_returns="one"`: Returns a single record as a `Record` object, or `None` if no record is found.
+        - `fetch_returns="all"`: Returns a list of `Record` objects, which
+        - `fetch_returns="none"`: Executes the command without returning any records (useful for INSERT, UPDATE, DELETE operations that does not use RETURNING statement).
+
+        """
+        print("===" * 10)
+        print(executable.preview())
+        print("===" * 10)
+
+        async with self._get_connection(connection) as conn:
+            if fetch_returns == "all":
+                return cast(
+                    list[Record], await conn.fetch(executable.sql, *executable.values)
+                )
+            elif fetch_returns == "one":
+                return cast(
+                    Record | None,
+                    await conn.fetchrow(executable.sql, *executable.values),
+                )
+            else:
+                return await conn.execute(executable.sql, *executable.values)
+                # Returns the status string on success.
+
+    async def stream(self, executable: ExecutableSQL) -> AsyncGenerator[Record]:
+        """
+        Streams records from the database using a prepared statement.
+        """
+
+        print(executable.preview())
+        async with self.transaction() as connection:
+            stmt = await connection.prepare(query=executable.sql)
+            async for row in stmt.cursor(*executable.values, prefetch=500):
+                # fetch 500 rows at a time and yield them.
+                # fetch next 500 rows after each batch is yielded.
+                yield row
+
+    async def soft_delete(
+        self,
+        executables: list[ExecutableSQL],
+        return_last: bool = True,
+        connection: Connection | None = None,
+    ) -> Record | None:
+        """
+        This method executes a list of SQL commands in a transaction to perform a soft delete operation.
+        - `executables`: A list of `BaseExecutableSQL` objects representing the SQL commands to be executed.
+        - `return_last`: A boolean flag indicating whether to return the result of the last executed
+        - `connection`: An optional `Connection` object to use for executing the commands. If not provided, a new connection will be acquired from the pool.
+        The method ensures that all commands are executed within a single transaction. If any command fails, the entire transaction will be rolled back to maintain data integrity.
+        """
+
+        if not executables:
+            return None
+
+        async with self._get_connection(connection) as conn, conn.transaction():
+            main_executable = executables[:-1]
+            last_executable = executables[-1]
+
+            for executable in main_executable:
+                await conn.execute(executable.sql, *executable.values)
+
+            result = cast(
+                Record,
+                await conn.fetchrow(last_executable.sql, *last_executable.values),
+            )
+
+            return result if return_last else None
