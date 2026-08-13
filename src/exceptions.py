@@ -22,7 +22,7 @@ class DomainException(Exception):
     error_code = "DOMAIN_ERROR"
     message = "Internal Server Errror"
 
-    def __init__(self, message: str | None = None):
+    def __init__(self, message: str | None = None, **kwargs):
         if message:
             self.message = message
         super().__init__(self.message)
@@ -75,8 +75,10 @@ class NotFoundException(DomainException):
     _entity = "Resource"
     message = f"{_entity} not found"
 
-    def __init__(self, message: str | None = None):
-        # self.message = f"{self._entity} not found"
+    def __init__(self, message: str | None = None, **kwargs):
+        self.message = f"{self._entity} not found with"
+        for key, value in kwargs.items():
+            self.message = self.message + f"{key}: {value} , "
         if message is None:
             super().__init__(self.message)
         else:
@@ -95,6 +97,22 @@ class PasswordNotFoundError(NotFoundException):
     _entity = "Password"
 
 
+class PersonalDetailsNotFoundError(NotFoundException):
+    _entity = "PersonalDetails"
+
+
+class AcademicDetailsNotFoundError(NotFoundException):
+    _entity = "AcademicDetails"
+
+
+class AcademicWithEnrollmentsNotFoundError(NotFoundException):
+    _entity = "AcademicDetails with Enrollment not found"
+
+
+class ParentalDetailsNotFoundError(NotFoundException):
+    _entity = "ParentalDetails"
+
+
 # conflict Exceptions:
 """
     Conflict Exceptions - Raised when a conflict occurs, such as a duplicate resource.
@@ -108,6 +126,21 @@ class ConflictException(DomainException):
 class UserAlreadyExistsError(ConflictException):
     error_code = "USER_ALREAD_EXISTS"
     message = "User Already Exists"
+
+
+class PersonalDetailsAlreadyExistsError(ConflictException):
+    error_code = "PERSONAL_DETAILS_ALREADY_EXISTS"
+    message = "Personal details already exists"
+
+
+class AcademicDetailsAlreadyExistsError(ConflictException):
+    error_code = "ACADEMIC_DETAILS_ALREADY_EXISTS"
+    message = "Academic details already exists"
+
+
+class ParentalDetailsAlreadyExistsError(ConflictException):
+    error_code = "PARENTAL_DETAILS_ALREADY_EXISTS"
+    message = "Parental details already exists"
 
 
 #   Validation Exceptions
@@ -124,6 +157,16 @@ class PasswordConfirmMismatchError(ValidationException):
 class NameLengthError(ValidationException):
     error_code = "NAME_LENGTH_ERROR"
     message = "Name length is invalid"
+
+
+class AcademicDetailsNotUnique(ValidationException):
+    error_code = "ACADEMIC_DETAILS_NOT_UNIQUE"
+    message = "Academic details are not unique"
+
+
+class ParentalDetailsError(ValidationException):
+    error_code = "PARENTAL_DETAILS_ERROR"
+    message = "Only one of father, mother, or guardian can be provided"
 
 
 """

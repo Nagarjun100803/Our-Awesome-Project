@@ -15,7 +15,7 @@ from src.command.repositories.base import BaseRepository
 from src.database import DBManager, ExecutableSQL
 
 
-class ProviderRepository(BaseRepository):
+class ProviderRepository(BaseRepository[Provider]):
     tablename: ClassVar[str] = "providers"
 
     @override

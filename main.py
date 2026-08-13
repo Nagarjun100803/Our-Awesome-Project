@@ -8,6 +8,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from src.api.exception_registry import exception_registry
 from src.api.routes.authentication import auth_router
+from src.api.routes.profile_completion import profile_completion_router
 from src.dependencies import db
 from src.exceptions import DomainException
 
@@ -38,6 +39,7 @@ app.add_middleware(
 app.add_middleware(SessionMiddleware, secret_key="some-secret-key")
 
 app.include_router(router=auth_router, prefix=api_prefix)
+app.include_router(router=profile_completion_router, prefix=api_prefix)
 
 
 @app.get(f"{api_prefix}/")

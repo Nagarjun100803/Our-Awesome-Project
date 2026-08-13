@@ -4,7 +4,8 @@ from fastapi import Cookie, Depends
 
 from src.command.commands.authentication import GetUserByToken, UserContext
 from src.command.services.authentication import AuthenticationService
-from src.dependencies import authentication_service
+from src.command.services.profile_completion import ProfileCompletionService
+from src.dependencies import authentication_service, profile_completion_service
 from src.exceptions import UnAuthenticatedError
 
 """
@@ -39,4 +40,18 @@ def get_authentication_service() -> AuthenticationService:
 
 AuthenticationServiceDependency = Annotated[
     AuthenticationService, Depends(get_authentication_service)
+]
+
+
+"""
+3. Complete your Profile Dependency
+"""
+
+
+def get_profile_completion_service() -> ProfileCompletionService:
+    return profile_completion_service
+
+
+ProfileCompletionServiceDependency = Annotated[
+    ProfileCompletionService, Depends(get_profile_completion_service)
 ]
