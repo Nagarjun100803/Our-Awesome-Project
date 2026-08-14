@@ -33,10 +33,10 @@ from src.command.commands.base import BaseCmd
 
 class LevelOfEducationEnum(StrEnum):
     SCHOOL_10TH = "10th Grade"
-    DIPLOMA_12TH = "12th/Diploma"
+    DIPLOMA_12TH = "12th or Diploma"
     UNDERGRADUATE = "Undergraduate"
     POSTGRADUATE = "Postgraduate"
-    RESEARCH_PHD = "Research/PhD"
+    RESEARCH_PHD = "Research or PhD"
 
 
 class GradingSystemEnum(StrEnum):
