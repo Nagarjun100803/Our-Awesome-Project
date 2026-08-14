@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from pydantic import Field
 
 from src.api.dependencies import (
+    CollegeLookupServiceDependency,
     LocationLookupServiceDependency,
     ProfileCompletionServiceDependency,
     UserContextDependency,
@@ -24,6 +25,7 @@ from src.command.commands.academic_details import (
     AcademicDetailsUpadate,
     LevelOfEducationEnum,
 )
+from src.command.commands.college_lookup import CollegeLookup, CollegeLookupGet
 from src.command.commands.personal_details import PersonalDetailsCreate
 from src.command.commands.users import UserRole
 
@@ -153,3 +155,15 @@ async def get_location_by_pincode(
     location_service: LocationLookupServiceDependency,
 ):
     return await location_service.lookup_pincode(pincode)
+
+
+@profile_completion_router.get("/college/{college_name}")
+async def get_college_by_name(
+    college_name: str,
+    college_lookup_service: CollegeLookupServiceDependency,
+):
+    return {
+        "colleges": await college_lookup_service.get(
+            CollegeLookupGet(name=college_name)
+        )
+    }

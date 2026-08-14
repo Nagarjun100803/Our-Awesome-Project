@@ -1,14 +1,16 @@
-from typing import Annotated, Callable
+from typing import Annotated
 
 from fastapi import Cookie, Depends
 
 from src.command.commands.authentication import GetUserByToken, UserContext
 from src.command.commands.users import UserRole
 from src.command.services.authentication import AuthenticationService
+from src.command.services.college_lookup import CollegeLookupService
 from src.command.services.location_lookup import LocationLookupService
 from src.command.services.profile_completion import ProfileCompletionService
 from src.dependencies import (
     authentication_service,
+    college_lookup_service,
     location_lookup_service,
     profile_completion_service,
 )
@@ -44,10 +46,6 @@ def require_role(*allowed_roles: UserRole):
 
     return role_checker
 
-
-type RoleChecker = Annotated[
-    Callable[[UserContext], UserContext], Depends(require_role)
-]
 
 type UserContextDependency = Annotated[UserContext, Depends(get_current_user_context)]
 
@@ -91,4 +89,18 @@ def get_location_lookup_service() -> LocationLookupService:
 
 LocationLookupServiceDependency = Annotated[
     LocationLookupService, Depends(get_location_lookup_service)
+]
+
+
+"""
+5. College Lookup Dependency
+"""
+
+
+def get_college_lookup_service() -> CollegeLookupService:
+    return college_lookup_service
+
+
+CollegeLookupServiceDependency = Annotated[
+    CollegeLookupService, Depends(get_college_lookup_service)
 ]

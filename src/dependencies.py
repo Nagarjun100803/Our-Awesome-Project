@@ -1,4 +1,5 @@
 from src.command.repositories.academic_details import AcademicDetailsRepository
+from src.command.repositories.college_lookup import CollegeLookupRepository
 from src.command.repositories.parental_details import ParentalDetailsRepository
 from src.command.repositories.personal_details import PersonalDetailsRepository
 from src.command.repositories.providers import ProviderRepository
@@ -6,6 +7,7 @@ from src.command.repositories.users import UserRepository
 from src.command.services import profile_completion
 from src.command.services.academic_details import AcademicDetailsService
 from src.command.services.authentication import AuthenticationService
+from src.command.services.college_lookup import CollegeLookupService
 from src.command.services.location_lookup import LocationLookupService
 from src.command.services.parental_details import ParentalDetailsService
 from src.command.services.personal_details import PersonalDetailsService
@@ -62,3 +64,10 @@ Location Lookup Dependencies
 """
 
 location_lookup_service = LocationLookupService()
+
+
+"""
+College Lookup Dependencies
+"""
+college_lookup_repo = CollegeLookupRepository(db=db)
+college_lookup_service = CollegeLookupService(repo=college_lookup_repo)

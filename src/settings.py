@@ -86,6 +86,14 @@ class DatabaseSettings(BaseSettings):
     )
 
 
+class PincodeSettings(BaseSettings):
+    api_url: str
+
+    model_config = SettingsConfigDict(
+        env_file="src/.env", env_prefix="PINCODE_", extra="ignore"
+    )
+
+
 class Settings(BaseModel):
     database: Annotated[DatabaseSettings, Field(default_factory=DatabaseSettings)]  # type: ignore[arg-type]
     jwt: Annotated[JWTSettings, Field(default_factory=JWTSettings)]  # type: ignore[arg-type]
@@ -99,6 +107,9 @@ class Settings(BaseModel):
         EmailVerification, Field(default_factory=EmailVerification)  # type: ignore[arg-type]
     ]
     frontend: Annotated[FrontendSettings, Field(default_factory=FrontendSettings)]  # type: ignore[arg-type]
+    # pincode: Annotated[PincodeSettings, Field(default_factory=PincodeSettings)]  # type: ignore[arg-type]
+
+    pincode: Annotated[PincodeSettings, Field(default_factory=PincodeSettings)]  # type: ignore[arg-type]
 
 
 settings = Settings()  # type: ignore[call-arg]

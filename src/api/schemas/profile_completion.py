@@ -186,3 +186,8 @@ class PincodeLookupResponse(BaseCmd):
     city: Annotated[
         list[str], Field(description="List of localities/areas under this pincode")
     ]
+
+
+class CollegeLookupResponse(BaseCmd):
+    name: Annotated[str, Field(description="The name of the college")]
+    university: Annotated[str, Field(description="The university of the college")]

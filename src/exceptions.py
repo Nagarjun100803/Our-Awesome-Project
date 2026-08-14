@@ -113,6 +113,10 @@ class ParentalDetailsNotFoundError(NotFoundException):
     _entity = "ParentalDetails"
 
 
+class PincodeNotFoundError(NotFoundException):
+    _entity = "Pincode"
+
+
 # conflict Exceptions:
 """
     Conflict Exceptions - Raised when a conflict occurs, such as a duplicate resource.
@@ -190,3 +194,19 @@ class UnAuthorizedError(SecurityException):
 
 class UnAuthenticatedError(SecurityException):
     message = "Unauthenticated."
+
+
+"""
+External Service Exceptions
+Raised when an external/upstream service fails.
+"""
+
+
+class ExternalServiceException(DomainException):
+    error_code = "EXTERNAL_SERVICE_ERROR"
+    message = "External service error"
+
+
+class PostalServiceError(ExternalServiceException):
+    error_code = "POSTAL_SERVICE_ERROR"
+    message = "Postal service is currently unavailable"
