@@ -22,6 +22,7 @@ from src.command.commands.users import (
 )
 from src.command.repositories.providers import ProviderRepository
 from src.command.repositories.users import UserRepository
+from src.command.services.base import BaseService
 from src.core.security.jwt import JWTHandler, JWTPayloadCreate
 from src.core.security.password import PasswordHasher
 from src.core.security.serializer import (
@@ -41,7 +42,9 @@ from src.exceptions import (
 from src.settings import settings
 
 
-class AuthenticationService:
+class AuthenticationService(BaseService[User]):
+    _not_found_exc = UserNotFoundError
+
     def __init__(
         self,
         user_repo: UserRepository,
@@ -54,13 +57,13 @@ class AuthenticationService:
         self.jwt_handler = jwt_handler
         self.provider_repo = provider_repo
 
-    def _require_entity(self, record: User | None, **kwargs: Any) -> User:
-        """Raises a ValueError if the record is None.
-        Used to ensure a record exists before returning it while fetching from the repository."""
+    # def _require_entity(self, record: User | None, **kwargs: Any) -> User:
+    #     """Raises a ValueError if the record is None.
+    #     Used to ensure a record exists before returning it while fetching from the repository."""
 
-        if not record:
-            raise ValueError("Record not found")
-        return record
+    #     if not record:
+    #         raise ValueError("Record not found")
+    #     return record
 
     async def signup(self, cmd: UserCreate) -> User:
         """Registers a new user with the given details."""
@@ -119,8 +122,8 @@ class AuthenticationService:
             user = await self.user_repo.get(UserGetByEmail(email=payload.get("email")))
 
             if user is None:
-                raise ValueError(
-                    f"User not found with the email: {payload.get('email')}"
+                raise self._not_found_exc(
+                    message=f"User not found with the email: {payload.get('email')}"
                 )
 
             # If not verified.
@@ -149,7 +152,7 @@ class AuthenticationService:
         user = await self.user_repo.get(UserGetByEmail(email=cmd.email))
 
         if user is None:
-            raise UserNotFoundError(message=f"User not found: {cmd.email}")
+            raise self._not_found_exc(message=f"User not found: {cmd.email}")
 
         if not user.email_verified:
             raise EmailNotVerifiedError(message="Email not verified.")
@@ -170,7 +173,7 @@ class AuthenticationService:
             )
             user = await self.user_repo.get(UserGetByEmail(email=payload.get("email")))
             if user is None:
-                raise ValueError("User not found")
+                raise self._not_found_exc(message="User not found")
 
             hashed_password = self.password_hasher.hash_password(cmd.password)
 
@@ -245,7 +248,7 @@ class AuthenticationService:
         user = await self.user_repo.get(UserGetById(id=payload.user_id))
 
         if user is None:
-            raise UserNotFoundError(message=f"User not found: {payload.user_id}")
+            raise self._not_found_exc(message=f"User not found: {payload.user_id}")
 
         return UserContext(
             user_id=user.id, username=user.name, email=user.email, role=user.role

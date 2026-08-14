@@ -6,6 +6,7 @@ from src.command.repositories.users import UserRepository
 from src.command.services import profile_completion
 from src.command.services.academic_details import AcademicDetailsService
 from src.command.services.authentication import AuthenticationService
+from src.command.services.location_lookup import LocationLookupService
 from src.command.services.parental_details import ParentalDetailsService
 from src.command.services.personal_details import PersonalDetailsService
 from src.core.security.jwt import JWTHandler
@@ -48,8 +49,16 @@ personal_service = PersonalDetailsService(repo=personal_repo)
 academic_service = AcademicDetailsService(repo=academic_repo)
 parental_service = ParentalDetailsService(repo=parental_repo)
 
+
 profile_completion_service = profile_completion.ProfileCompletionService(
     personal_service=personal_service,
     academic_service=academic_service,
     parental_service=parental_service,
 )
+
+
+"""
+Location Lookup Dependencies
+"""
+
+location_lookup_service = LocationLookupService()

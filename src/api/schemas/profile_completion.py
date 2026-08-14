@@ -177,3 +177,12 @@ class ProfileCompletionStatus(BaseCmd):
     parental_details: Annotated[
         bool, Field(description="Used to Check the parental details completed")
     ]
+
+
+class PincodeLookupResponse(BaseCmd):
+    pincode: Annotated[str, Field(description="The pincode")]
+    state: Annotated[str, Field(description="The state")]
+    district: Annotated[str, Field(description="The district")]
+    city: Annotated[
+        list[str], Field(description="List of localities/areas under this pincode")
+    ]

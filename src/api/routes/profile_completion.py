@@ -1,13 +1,19 @@
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Depends
+from pydantic import Field
 
 from src.api.dependencies import (
+    LocationLookupServiceDependency,
     ProfileCompletionServiceDependency,
     UserContextDependency,
+    require_role,
 )
 from src.api.schemas.profile_completion import (
     AcademicUpdateSchema,
     ParentalDetailsSchema,
     PersonalDetailsSchema,
+    PincodeLookupResponse,
     ProfileCompletionStatus,
 )
 from src.command.commands.academic_details import (
@@ -19,9 +25,12 @@ from src.command.commands.academic_details import (
     LevelOfEducationEnum,
 )
 from src.command.commands.personal_details import PersonalDetailsCreate
+from src.command.commands.users import UserRole
 
 profile_completion_router = APIRouter(
-    prefix="/profile-completion", tags=["Complete Your Profile"]
+    prefix="/profile-completion",
+    tags=["Complete Your Profile"],
+    dependencies=[Depends(require_role(UserRole.STUDENT))],
 )
 
 
@@ -134,3 +143,13 @@ async def get_completion_status(
         academic_details=result[1],
         parental_details=result[2],
     )
+
+
+@profile_completion_router.get(
+    "/pincode/{pincode}", response_model=PincodeLookupResponse
+)
+async def get_location_by_pincode(
+    pincode: Annotated[str, Field(pattern=r"^\d{6}$")],
+    location_service: LocationLookupServiceDependency,
+):
+    return await location_service.lookup_pincode(pincode)

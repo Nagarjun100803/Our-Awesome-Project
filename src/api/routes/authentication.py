@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, RedirectResponse
+from pydantic import EmailStr
 
 from src.api.dependencies import AuthenticationServiceDependency, UserContextDependency
 from src.api.schemas.authentication import (
@@ -78,6 +79,17 @@ async def set_password(
         )
     )
     return JSONResponse(content={"message": "Password Reset Successfully"})
+
+
+@auth_router.post("/resend-email-verification/", status_code=200)
+async def resend_email_verification(
+    email: EmailStr, auth_service: AuthenticationServiceDependency
+):
+    return {
+        "email_verification_token": auth_service.generate_email_verification_token(
+            email=email
+        )
+    }
 
 
 @auth_router.post("/verify-email", status_code=200)
