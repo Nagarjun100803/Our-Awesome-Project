@@ -60,6 +60,10 @@ def domain_exception_handler(request: Request, exc: DomainException) -> JSONResp
         status_code=status_code,
         content={
             "sucess": False,
-            "error": {"message": exc.message, "type": exc.__class__.__name__},
+            "error": {
+                "message": exc.message,
+                "type": exc.__class__.__name__,
+                "error_code": exc.error_code,
+            },
         },
     )
