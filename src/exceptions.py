@@ -86,34 +86,42 @@ class NotFoundException(DomainException):
 
 
 class UserNotFoundError(NotFoundException):
+    error_code = "USER_NOT_FOUND"
     _entity = "User"
 
 
 class OpenIDConnectNotFoundError(NotFoundException):
+    error_code = "OPENID_CONNECT_NOT_FOUND"
     _entity = "OpenIDConnect"
 
 
 class PasswordNotFoundError(NotFoundException):
+    error_code = "PASSWORD_NOT_FOUND"
     _entity = "Password"
 
 
 class PersonalDetailsNotFoundError(NotFoundException):
+    error_code = "PERSONAL_DETAILS_NOT_FOUND"
     _entity = "PersonalDetails"
 
 
 class AcademicDetailsNotFoundError(NotFoundException):
+    error_code = "ACADEMIC_DETAILS_NOT_FOUND"
     _entity = "AcademicDetails"
 
 
 class AcademicWithEnrollmentsNotFoundError(NotFoundException):
+    error_code = "ACADEMIC_WITH_ENROLLMENTS_NOT_FOUND"
     _entity = "AcademicDetails with Enrollment not found"
 
 
 class ParentalDetailsNotFoundError(NotFoundException):
+    error_code = "PARENTAL_DETAILS_NOT_FOUND"
     _entity = "ParentalDetails"
 
 
 class PincodeNotFoundError(NotFoundException):
+    error_code = "PINCODE_NOT_FOUND"
     _entity = "Pincode"
 
 
@@ -181,18 +189,23 @@ Security Errors - Authorization Related Errors
 class SecurityException(DomainException):
     """Base class for authentication and authorization errors."""
 
+    error_code = "SECURITY_ERROR"
+
     message = "A Security error occurred."
 
 
 class EmailNotVerifiedError(SecurityException):
+    error_code = "EMAIL_NOT_VERIFIED"
     message = "Email not verified."
 
 
 class UnAuthorizedError(SecurityException):
+    error_code = "UNAUTHORIZED"
     message = "Unauthorized."
 
 
 class UnAuthenticatedError(SecurityException):
+    error_code = "UNAUTHENTICATED"
     message = "Unauthenticated."
 
 
