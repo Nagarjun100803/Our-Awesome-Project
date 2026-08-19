@@ -21,7 +21,6 @@ CREATE TABLE IF NOT EXISTS educational_details(
 );
 """
 
-from decimal import Decimal
 from enum import StrEnum
 from typing import Annotated
 from uuid import UUID
@@ -45,7 +44,6 @@ class GradingSystemEnum(StrEnum):
 
 
 class AcademicDetails(BaseCmd):
-    id: Annotated[UUID, Field(description="User Id")]
     level_of_education: Annotated[
         LevelOfEducationEnum,
         Field(
@@ -65,7 +63,7 @@ class AcademicDetails(BaseCmd):
         ),
     ] = None
     year_of_passing: Annotated[
-        str, Field(description="Year of Passing e.g., 2020, 2021")
+        str, Field(description="Year of Passing e.g., 2020, 2021", max_length=4)
     ]
     register_number: Annotated[
         str | None, Field(description="Register Number e.g., ")
@@ -75,10 +73,8 @@ class AcademicDetails(BaseCmd):
         Field(description="Grading System e.g., percentage, cgpa"),
     ] = None
     score: Annotated[
-        Decimal | None,
-        Field(
-            description="Score e.g., 90.5, 85.0, 9.0", decimal_places=3, max_digits=6
-        ),
+        str | None,
+        Field(description="Score e.g., 90.5, 85.0, 9.0"),
     ] = None
     current_semester: Annotated[
         int | None, Field(description="Current Semester e.g., 1, 2, 3")
@@ -92,6 +88,7 @@ class AcademicDetails(BaseCmd):
 
 
 class AcademicDetailsCreate(AcademicDetails):
+    id: Annotated[UUID, Field(description="User Id")]
     created_by: Annotated[
         UUID,
         Field(
@@ -144,6 +141,16 @@ class AcademicDetailsUpadate(BaseCmd):
             description="Level of Education e.g., 10th, 12th/diploma, undergraduate, postgraduate, research/PhD"
         ),
     ]
+    institution_name: Annotated[
+        str | None, Field(description="Institution Name e.g., School, College")
+    ] = None
+    board_university: Annotated[
+        str | None,
+        Field(description="Board/University e.g., CBSE, ICSE, State University"),
+    ] = None
+    year_of_passing: Annotated[
+        str | None, Field(description="Year of Passing e.g., 2020, 2021", max_length=4)
+    ] = None
     course_stream_specialization: Annotated[
         str | None,
         Field(
@@ -158,10 +165,8 @@ class AcademicDetailsUpadate(BaseCmd):
         Field(description="Grading System e.g., percentage, cgpa"),
     ] = None
     score: Annotated[
-        Decimal | None,
-        Field(
-            description="Score e.g., 90.5, 85.0, 9.0", decimal_places=3, max_digits=6
-        ),
+        str | None,
+        Field(description="Score e.g., 90.5, 85.0, 9.0"),
     ] = None
     current_semester: Annotated[
         int | None, Field(description="Current Semester e.g., 1, 2, 3")

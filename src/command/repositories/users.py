@@ -1,4 +1,3 @@
-import asyncio
 from typing import Any, ClassVar, override
 
 from asyncpg import Connection
@@ -14,7 +13,7 @@ from src.command.commands.users import (
     UserUpdate,
 )
 from src.command.repositories.base import BaseRepository
-from src.database import DBManager, ExecutableSQL
+from src.database import ExecutableSQL
 
 
 class UserRepository(BaseRepository[User]):
@@ -81,48 +80,3 @@ class UserRepository(BaseRepository[User]):
         """Checks if a user exists in the repository by the given filters."""
 
         return await super().exists_by(connection, **filters)
-
-
-async def main():
-
-    db = DBManager()
-    await db.init_pool()
-
-    repo = UserRepository(db=db)
-    # user = await repo.add(
-    #     UserCreate(name="praveen", email="234asdf11123@gmail.com", password=None), None
-    # )
-
-    user = await repo.pick(
-        columns=["id", "name", "email"],
-        fetch_all=False,
-        connection=None,
-        name="ARUL",
-    )
-
-    # user_update = await repo.update(
-    #     UserUpdate(
-    #         id=UUID("06acb0eb-94cd-42ba-9c82-99319954be78"),
-    #         password="23421",
-    #         updated_by=UUID("06acb0eb-94cd-42ba-9c82-99319954be78"),
-    #     ),
-    #     None,
-    # )
-
-    # exists = await repo.exists_by(
-    #     email="234adf11123@gmail.com", id=UUID("06acb0eb-94cd-42ba-9c82-99319954be78")
-    # )
-
-    # user = await repo.get(
-    #     query=UserGetById(id=UUID("06acb0eb-94cd-42ba-9c82-99319954be78"))
-    # )
-    await db.close_pool()
-    print(user)
-
-    # print("---update----", user_update)
-
-    # print("----exists---", exists)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())

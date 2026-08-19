@@ -125,6 +125,16 @@ class PincodeNotFoundError(NotFoundException):
     _entity = "Pincode"
 
 
+class MediaNotFoundError(NotFoundException):
+    error_code = "MEDIA_NOT_FOUND"
+    _entity = "Media"
+
+
+class ProfileVerificationNotFoundError(NotFoundException):
+    error_code = "PROFILE_VERIFICATION_NOT_FOUND"
+    _entity = "ProfileVerification"
+
+
 # conflict Exceptions:
 """
     Conflict Exceptions - Raised when a conflict occurs, such as a duplicate resource.
@@ -135,8 +145,13 @@ class ConflictException(DomainException):
     pass
 
 
+class EmailVerificationError(ConflictException):
+    error_code = "EMAIL_VERIFICATION_ERROR"
+    message = "Email verification error"
+
+
 class UserAlreadyExistsError(ConflictException):
-    error_code = "USER_ALREAD_EXISTS"
+    error_code = "USER_ALREADY_EXISTS"
     message = "User Already Exists"
 
 

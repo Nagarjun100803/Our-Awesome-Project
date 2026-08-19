@@ -1,6 +1,4 @@
-import re
 from datetime import date
-from decimal import Decimal
 from typing import Annotated, Self
 from uuid import UUID
 
@@ -120,10 +118,8 @@ class AcademicCreateSchema(BaseCmd):
         Field(description="Grading System e.g., percentage, cgpa"),
     ] = None
     score: Annotated[
-        Decimal | None,
-        Field(
-            description="Score e.g., 90.5, 85.0, 9.0", decimal_places=3, max_digits=6
-        ),
+        str | None,
+        Field(description="Score e.g., 90.5, 85.0, 9.0"),
     ] = None
     current_semester: Annotated[
         int | None, Field(description="Current Semester e.g., 1, 2, 3")
@@ -151,10 +147,8 @@ class AcademicUpdateSchema(BaseCmd):
         Field(description="Grading System e.g., percentage, cgpa"),
     ] = None
     score: Annotated[
-        Decimal | None,
-        Field(
-            description="Score e.g., 90.5, 85.0, 9.0", decimal_places=3, max_digits=6
-        ),
+        str | None,
+        Field(description="Score e.g., 90.5, 85.0, 9.0"),
     ] = None
     current_semester: Annotated[
         int | None, Field(description="Current Semester e.g., 1, 2, 3")
@@ -191,3 +185,11 @@ class PincodeLookupResponse(BaseCmd):
 class CollegeLookupResponse(BaseCmd):
     name: Annotated[str, Field(description="The name of the college")]
     university: Annotated[str, Field(description="The university of the college")]
+
+
+class FileUploadCommand(BaseCmd):
+    filename: Annotated[str, Field(description="The name of the file")]
+    file_size: Annotated[int, Field(description="The size of the file")]
+    content_type: Annotated[
+        str, Field(description="The content type of the file like application/pdf")
+    ]

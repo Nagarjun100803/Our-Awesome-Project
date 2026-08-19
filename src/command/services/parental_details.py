@@ -36,16 +36,11 @@ class ParentalDetailsService(BaseService[ParentalDetails]):
         self, cmd: ParentalDetailsUpdate, connection: Connection | None = None
     ) -> ParentalDetails:
 
-        if not await self.repo.exists_by(id=cmd.id):
-            raise self._not_found_exc(id=cmd.id)
-
         return self._require_entity(await self.repo.update(cmd, connection))
 
     async def delete(
         self, cmd: ParentalDetailsDelete, connection: Connection | None = None
     ) -> ParentalDetails:
-        if not await self.repo.exists_by(id=cmd.id):
-            raise self._not_found_exc(id=cmd.id)
 
         return self._require_entity(await self.repo.delete(cmd, connection))
 

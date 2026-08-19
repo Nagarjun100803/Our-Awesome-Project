@@ -18,6 +18,7 @@ from src.database import DBManager
 from src.exceptions import (
     AcademicDetailsAlreadyExistsError,
     AcademicDetailsNotFoundError,
+    AcademicWithEnrollmentsNotFoundError,
 )
 
 
@@ -44,11 +45,6 @@ class AcademicDetailsService(BaseService[AcademicDetails]):
         self, cmd: AcademicDetailsUpadate, connection: Connection | None = None
     ) -> AcademicDetails:
 
-        if not await self.repo.exists_by(
-            id=cmd.id, level_of_education=cmd.level_of_education
-        ):
-            raise self._not_found_exc(id=cmd.id)
-
         return self._require_entity(
             await self.repo.update(cmd=cmd, connection=connection)
         )
@@ -56,10 +52,6 @@ class AcademicDetailsService(BaseService[AcademicDetails]):
     async def delete(
         self, cmd: AcademicDetailsDelete, connection: Connection | None = None
     ) -> AcademicDetails:
-        if not await self.repo.exists_by(
-            id=cmd.id, level_of_education=cmd.level_of_education
-        ):
-            raise self._not_found_exc(id=cmd.id)
 
         return self._require_entity(
             await self.repo.delete(cmd=cmd, connection=connection)
@@ -68,8 +60,6 @@ class AcademicDetailsService(BaseService[AcademicDetails]):
     async def delete_all(
         self, cmd: AcademicDetailsDelete, connection: Connection | None = None
     ) -> AcademicDetails:
-        if not await self.repo.exists_by(id=cmd.id):
-            raise self._not_found_exc(id=cmd.id)
 
         return self._require_entity(
             await self.repo.delete_all(cmd=cmd, connection=connection)
@@ -98,6 +88,18 @@ class AcademicDetailsService(BaseService[AcademicDetails]):
         return await self.repo.exists_by(
             connection=connection, id=cmd.id, currently_enrolled=True
         )
+
+    async def check_currently_enrolled(
+        self, cmd: AcademicDetailsGetAll, connection: Connection | None = None
+    ) -> bool:
+        if not await self.repo.exists_by(
+            connection=connection, id=cmd.id, currently_enrolled=True
+        ):
+            raise AcademicWithEnrollmentsNotFoundError(
+                "Academic with enrollments not found"
+            )
+
+        return True
 
 
 async def main():

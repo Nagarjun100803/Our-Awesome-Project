@@ -1,5 +1,3 @@
-from typing import Any
-
 from asyncpg import Connection
 
 from src.command.commands.personal_details import (
@@ -36,10 +34,7 @@ class PersonalDetailsService(BaseService[PersonalDetails]):
 
     async def update(
         self, cmd: PersonalDetailsUpdate, connection: Connection | None = None
-    ):
-
-        if not await self.repo.exists_by(id=cmd.id):
-            raise self._not_found_exc(id=cmd.id)
+    ) -> PersonalDetails:
 
         return self._require_entity(
             await self.repo.update(cmd=cmd, connection=connection)
@@ -47,9 +42,7 @@ class PersonalDetailsService(BaseService[PersonalDetails]):
 
     async def delete(
         self, cmd: PersonalDetailsDelete, connection: Connection | None = None
-    ):
-        if not await self.repo.exists_by(id=cmd.id):
-            raise self._not_found_exc(id=cmd.id)
+    ) -> PersonalDetails:
 
         return self._require_entity(
             await self.repo.delete(cmd=cmd, connection=connection)

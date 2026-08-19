@@ -2,14 +2,14 @@ import httpx
 
 from src.api.schemas.profile_completion import PincodeLookupResponse
 from src.exceptions import ExternalServiceException, PincodeNotFoundError
-from src.settings import PincodeSettings
+from src.settings import settings
 
 
 class LocationLookupService:
     async def lookup_pincode(self, pincode: str) -> PincodeLookupResponse:
         async with httpx.AsyncClient(timeout=5.0) as client:
             try:
-                response = await client.get(f"{PincodeSettings.api_url}/{pincode}")
+                response = await client.get(f"{settings.pincode.api_url}/{pincode}")
                 response.raise_for_status()
             except httpx.HTTPError:
                 raise ExternalServiceException(

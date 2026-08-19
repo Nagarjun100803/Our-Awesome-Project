@@ -1,10 +1,14 @@
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, BackgroundTasks, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import EmailStr
 
-from src.api.dependencies import AuthenticationServiceDependency, UserContextDependency
+from src.api.dependencies import (
+    AuthenticationServiceDependency,
+    EmailServiceDependency,
+    UserContextDependency,
+)
 from src.api.schemas.authentication import (
     ContextFromProvider,
     ForgotPassword,
@@ -15,6 +19,7 @@ from src.api.schemas.authentication import (
 from src.command.commands.authentication import ResetPasswordByToken, VerifyEmailByToken
 from src.command.commands.providers import ProviderName
 from src.command.commands.users import UserCreate
+from src.core.email.models import EmailVerification, SetPassword
 from src.core.security.oauth2 import OAUTHPROVIDERS, oauth
 from src.settings import settings
 
@@ -22,12 +27,28 @@ auth_router = APIRouter(tags=["Authentication"], prefix="/auth")
 
 
 @auth_router.post("/sign-up", status_code=201)
-async def signup(cmd: SignUp, auth_service: AuthenticationServiceDependency):
+async def signup(
+    cmd: SignUp,
+    auth_service: AuthenticationServiceDependency,
+    email_service: EmailServiceDependency,
+    background_tasks: BackgroundTasks,
+):
     user = await auth_service.signup(
         cmd=UserCreate(name=cmd.name, email=cmd.email, password=cmd.password)
     )
-    email_verification_token = auth_service.generate_email_verification_token(
+    email_verification_context = await auth_service.generate_email_verification_token(
         email=cmd.email
+    )
+
+    email_verification_token = email_verification_context.token
+
+    background_tasks.add_task(
+        email_service.send_template_one,
+        context=EmailVerification(
+            email=cmd.email,
+            url=f"http://localhost:5173/verify-email?token={email_verification_token}",
+            name=cmd.name,
+        ),
     )
 
     return JSONResponse(
@@ -58,9 +79,22 @@ async def login(cmd: Login, auth_service: AuthenticationServiceDependency):
     status_code=200,
 )
 async def generate_set_password_token(
-    cmd: ForgotPassword, auth_service: AuthenticationServiceDependency
+    cmd: ForgotPassword,
+    auth_service: AuthenticationServiceDependency,
+    email_service: EmailServiceDependency,
+    background_tasks: BackgroundTasks,
 ):
     forgot_password_context = await auth_service.generate_set_password_token(cmd=cmd)
+
+    background_tasks.add_task(
+        email_service.send_template_one,
+        context=SetPassword(
+            email=cmd.email,
+            url=f"http://localhost:5173/set-password?token={forgot_password_context.token}",
+            name=forgot_password_context.name,
+        ),
+    )
+
     return JSONResponse(
         content={
             "message": f"Hi {forgot_password_context.name}, Password Reset link sent to your mail. ",
@@ -83,13 +117,25 @@ async def set_password(
 
 @auth_router.post("/resend-email-verification/", status_code=200)
 async def resend_email_verification(
-    email: EmailStr, auth_service: AuthenticationServiceDependency
+    email: EmailStr,
+    auth_service: AuthenticationServiceDependency,
+    email_service: EmailServiceDependency,
+    background_tasks: BackgroundTasks,
 ):
-    return {
-        "email_verification_token": auth_service.generate_email_verification_token(
-            email=email
-        )
-    }
+    email_verification_context = await auth_service.generate_email_verification_token(
+        email=email
+    )
+
+    background_tasks.add_task(
+        email_service.send_template_one,
+        context=EmailVerification(
+            email=email,
+            url=f"http://localhost:5173/verify-email?token={email_verification_context.token}",
+            name=email_verification_context.name,
+        ),
+    )
+
+    return {"email_verification_token": email_verification_context.token}
 
 
 @auth_router.post("/verify-email", status_code=200)

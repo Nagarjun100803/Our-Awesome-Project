@@ -13,9 +13,8 @@ CREATE TABLE IF NOT EXISTS academic_details(
     register_number VARCHAR(100),
     current_semester NUMERIC(2),
     grading_system VARCHAR(50),
-    score NUMERIC(3,3),
+    score VARCHAR(10),
     currently_enrolled BOOLEAN NOT NULL DEFAULT FALSE,
-
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
     deleted_at TIMESTAMPTZ,

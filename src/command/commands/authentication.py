@@ -42,6 +42,15 @@ class ResetPasswordContext(BaseCmd):
     token: Annotated[str, Field(description="Token received from user email")]
 
 
+class EmailVerificationContext(BaseCmd):
+    """
+    Context for resending verification email.
+    """
+
+    name: Annotated[str, Field(description="name of the user")]
+    token: Annotated[str, Field(description="Token received from user email")]
+
+
 class UserContext(BaseCmd):
     """Context of the authenticated user"""
 
@@ -49,17 +58,3 @@ class UserContext(BaseCmd):
     username: Annotated[str, Field(description="Username")]
     email: Annotated[EmailStr, Field(description="Email address")]
     role: Annotated[UserRole, Field(description="User role")]
-
-    # def validate_role(self, role: UserRole) -> Self:
-    #     if self.role != UserRole(role).value:
-    #         raise UnAuthorizedError(message=f"Permission Denied: '{role.value}' only.")
-    #     return self
-
-
-# class LastLoginUpdate(BaseCmd):
-#     """
-#     Command to update last login time.
-#     """
-
-#     id: Annotated[UUID, Field(description="User id for updating Lastlogin field")]
-#     last_login: Annotated[datetime, Field(description="Last login time to update")]

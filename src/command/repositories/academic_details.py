@@ -1,5 +1,4 @@
 from typing import Any, ClassVar, cast, override
-from uuid import UUID
 
 from asyncpg import Connection
 from asyncpg.protocol.record import Record
@@ -16,7 +15,7 @@ from src.command.commands.academic_details import (
     AcademicDetailsUpadate,
 )
 from src.command.repositories.base import BaseRepository
-from src.database import DBManager, ExecutableSQL
+from src.database import ExecutableSQL
 
 
 class AcademicDetailsRepository(BaseRepository[AcademicDetails]):
@@ -168,47 +167,3 @@ class AcademicDetailsRepository(BaseRepository[AcademicDetails]):
     ) -> AcademicDetails | None:
         cmd = self._normalize(cmd, model=AcademicDetailsDeleteAll)
         return await super().delete(cmd, connection)
-
-
-async def main():
-    db = DBManager()
-    await db.init_pool()
-
-    # cmd = AcademicDetailsCreate(
-    #     id=UUID("522cc2cf-e3e8-46f3-9457-0d3dbddaa850"),
-    #     created_by=UUID("522cc2cf-e3e8-46f3-9457-0d3dbddaa850"),
-    #     level_of_education=LevelOfEducationEnum.UNDERGRADUATE,
-    #     institution_name="University College of Engineering Tindivanam",
-    #     board_university="Anna University",
-    #     course_stream_specialization="B.Tech Information Technology",
-    #     year_of_passing="2026",
-    # )
-
-    repo = AcademicDetailsRepository(db=db)
-
-    # cmd = AcademicDetailsCreate(
-    #     id=UUID("522cc2cf-e3e8-46f3-9457-0d3dbddaa850"),
-    #     created_by=UUID("522cc2cf-e3e8-46f3-9457-0d3dbddaa850"),
-    #     level_of_education=LevelOfEducationEnum.SCHOOL_10TH,
-    #     institution_name="Indo American Matric Hr. Sec School Cheyyar",
-    #     board_university="Tamil Nadu State Board",
-    #     year_of_passing="2019",
-    # )
-
-    # print(await repo.add(cmd=cmd))
-
-    # query = AcademicDetailsDelete(
-    #     id=UUID("522cc2cf-e3e8-46f3-9457-0d3dbddaa850"),
-    #     deleted_by=UUID("522cc2cf-e3e8-46f3-9457-0d3dbddaa850"),
-    # )
-    #
-    # query = AcademicDetailsGet(id=UUID("522cc2cf-e3e8-46f3-9457-0d3dbddaa850"))
-    # print(await repo.get_all(query=query))
-
-    await db.close_pool()
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(main())

@@ -1,10 +1,10 @@
-import asyncio
-from typing import Any, cast
+from typing import cast
 
 from itsdangerous import BadSignature, SignatureExpired
 
 from src.api.schemas.authentication import ContextFromProvider, ForgotPassword, Login
 from src.command.commands.authentication import (
+    EmailVerificationContext,
     GetUserByToken,
     ResetPasswordByToken,
     ResetPasswordContext,
@@ -29,13 +29,14 @@ from src.core.security.serializer import (
     reset_password_serializer,
     verify_email_serializer,
 )
-from src.database import DBManager
 from src.exceptions import (
     BadTokenError,
     EmailNotVerifiedError,
+    EmailVerificationError,
     ExpiredTokenError,
     InvalidCredentialsError,
     PasswordNotFoundError,
+    UnAuthenticatedError,
     UserAlreadyExistsError,
     UserNotFoundError,
 )
@@ -57,20 +58,10 @@ class AuthenticationService(BaseService[User]):
         self.jwt_handler = jwt_handler
         self.provider_repo = provider_repo
 
-    # def _require_entity(self, record: User | None, **kwargs: Any) -> User:
-    #     """Raises a ValueError if the record is None.
-    #     Used to ensure a record exists before returning it while fetching from the repository."""
-
-    #     if not record:
-    #         raise ValueError("Record not found")
-    #     return record
-
     async def signup(self, cmd: UserCreate) -> User:
         """Registers a new user with the given details."""
 
         if await self.user_repo.get(UserGetByEmail(email=cmd.email)):
-            # raise UserAlreadyExistsError(value=cmd.email, identifier="email")
-            # raise ValueError(f"Account Already Exists with email: {cmd.email}")
             raise UserAlreadyExistsError(
                 message=f"Account Already Exists with email: {cmd.email}"
             )
@@ -97,18 +88,29 @@ class AuthenticationService(BaseService[User]):
             raise InvalidCredentialsError(message="Incorrect Email or Password.")
 
         if not user.email_verified:
-            raise InvalidCredentialsError(message="Email not verified.")
+            raise EmailNotVerifiedError(message="Email not verified.")
 
         # Encode the JWT token and return it.
         return self.jwt_handler.create_jwt_token(
             payload=JWTPayloadCreate(user_id=user.id, role=user.role)
         )
 
-    def generate_email_verification_token(self, email: str) -> str:
+    async def generate_email_verification_token(
+        self, email: str
+    ) -> EmailVerificationContext:
         """
         Generates an email verification token for the given email.
         """
-        return verify_email_serializer.dumps({"email": email})
+        user = await self.user_repo.get(UserGetByEmail(email=email))
+
+        if user is None:
+            raise self._not_found_exc(message=f"User not found with the email: {email}")
+
+        if user.email_verified:
+            raise EmailVerificationError(message="Email already verified.")
+
+        token = verify_email_serializer.dumps({"email": email})
+        return EmailVerificationContext(name=user.name, token=token)
 
     async def verify_email(self, cmd: VerifyEmailByToken) -> str:
         """
@@ -248,19 +250,9 @@ class AuthenticationService(BaseService[User]):
         user = await self.user_repo.get(UserGetById(id=payload.user_id))
 
         if user is None:
-            raise self._not_found_exc(message=f"User not found: {payload.user_id}")
+            # raise self._not_found_exc(message=f"User not found: {payload.user_id}")
+            raise UnAuthenticatedError(message=f"User not found: {payload.user_id}")
 
         return UserContext(
             user_id=user.id, username=user.name, email=user.email, role=user.role
         )
-
-
-async def main():
-    db = DBManager()
-    await db.init_pool()
-
-    await db.close_pool()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())

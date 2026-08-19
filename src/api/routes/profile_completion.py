@@ -1,17 +1,24 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 from pydantic import Field
 
 from src.api.dependencies import (
+    AcademicDetailsServiceDependency,
     CollegeLookupServiceDependency,
     LocationLookupServiceDependency,
-    ProfileCompletionServiceDependency,
+    ParentalDetailsServiceDependency,
+    PersonalDetailsServiceDependency,
+    ProfileVerificationServiceDependency,
+    S3BucketDependency,
     UserContextDependency,
+    VerifyProfileCompletionServiceDependency,
     require_role,
 )
 from src.api.schemas.profile_completion import (
     AcademicUpdateSchema,
+    FileUploadCommand,
     ParentalDetailsSchema,
     PersonalDetailsSchema,
     PincodeLookupResponse,
@@ -25,9 +32,15 @@ from src.command.commands.academic_details import (
     AcademicDetailsUpadate,
     LevelOfEducationEnum,
 )
-from src.command.commands.college_lookup import CollegeLookup, CollegeLookupGet
+from src.command.commands.college_lookup import CollegeLookupGet
 from src.command.commands.personal_details import PersonalDetailsCreate
+from src.command.commands.profile_verification import (
+    ProfileVerificationCreate,
+    ProfileVerificationStatusEnum,
+)
 from src.command.commands.users import UserRole
+from src.command.services.profile_verification import InitializeMedia
+from src.core.storage.s3 import FileMetadata
 
 profile_completion_router = APIRouter(
     prefix="/profile-completion",
@@ -39,11 +52,11 @@ profile_completion_router = APIRouter(
 @profile_completion_router.post("/personal-details")
 async def create_personal_details(
     cmd: PersonalDetailsSchema,
-    profile_completion_service: ProfileCompletionServiceDependency,
+    personal_service: PersonalDetailsServiceDependency,
     user_context: UserContextDependency,
 ):
 
-    return await profile_completion_service.save_personal(
+    return await personal_service.create(
         PersonalDetailsCreate(
             id=user_context.user_id,
             created_by=user_context.user_id,
@@ -55,31 +68,31 @@ async def create_personal_details(
 @profile_completion_router.post("/parental-details")
 async def create_parental_details(
     cmd: ParentalDetailsSchema,
-    profile_completion_service: ProfileCompletionServiceDependency,
+    parental_service: ParentalDetailsServiceDependency,
     user_context: UserContextDependency,
 ):
 
-    return await profile_completion_service.save_parental(
-        cmd.to_create(user_id=user_context.user_id)
-    )
+    return await parental_service.create(cmd.to_create(user_id=user_context.user_id))
 
 
 @profile_completion_router.get("/academic-details/status")
 async def check_academic_status(
-    profile_completion_service: ProfileCompletionServiceDependency,
     user_context: UserContextDependency,
+    academic_service: AcademicDetailsServiceDependency,
 ):
-    await profile_completion_service.academic_next(id=user_context.user_id)
+    await academic_service.check_currently_enrolled(
+        AcademicDetailsGetAll(id=user_context.user_id)
+    )
 
     return {"message": "Academic details saved successfully"}
 
 
 @profile_completion_router.get("/academic-details")
 async def get_academic_details(
-    profile_completion_service: ProfileCompletionServiceDependency,
     user_context: UserContextDependency,
+    academic_service: AcademicDetailsServiceDependency,
 ):
-    return await profile_completion_service.get_academic(
+    return await academic_service.get_all(
         AcademicDetailsGetAll(id=user_context.user_id)
     )
 
@@ -87,11 +100,11 @@ async def get_academic_details(
 @profile_completion_router.post("/academic-details/create")
 async def create_academic_detail(
     cmd: AcademicDetails,
-    profile_completion_service: ProfileCompletionServiceDependency,
+    academic_service: AcademicDetailsServiceDependency,
     user_context: UserContextDependency,
 ):
 
-    return await profile_completion_service.save_academic(
+    return await academic_service.create(
         AcademicDetailsCreate(
             id=user_context.user_id,
             created_by=user_context.user_id,
@@ -104,10 +117,10 @@ async def create_academic_detail(
 async def update_academic_details(
     cmd: AcademicUpdateSchema,
     level_of_education: LevelOfEducationEnum,
-    profile_completion_service: ProfileCompletionServiceDependency,
     user_context: UserContextDependency,
+    academic_service: AcademicDetailsServiceDependency,
 ):
-    return await profile_completion_service.update_academic(
+    return await academic_service.update(
         AcademicDetailsUpadate(
             id=user_context.user_id,
             updated_by=user_context.user_id,
@@ -120,25 +133,29 @@ async def update_academic_details(
 @profile_completion_router.delete("/academic-details/delete/{level_of_education}")
 async def delete_academic_details(
     level_of_education: LevelOfEducationEnum,
-    profile_completion_service: ProfileCompletionServiceDependency,
     user_context: UserContextDependency,
+    academic_service: AcademicDetailsServiceDependency,
 ):
-    await profile_completion_service.delete_academic(
+    await academic_service.delete(
         AcademicDetailsDelete(
             id=user_context.user_id,
             deleted_by=user_context.user_id,
             level_of_education=level_of_education,
         )
     )
+
     return {"message": "Academic details deleted successfully"}
 
 
 @profile_completion_router.get("/status")
 async def get_completion_status(
-    profile_completion_service: ProfileCompletionServiceDependency,
+    verify_profile_completion_service: VerifyProfileCompletionServiceDependency,
     user_context: UserContextDependency,
 ):
-    result = await profile_completion_service.is_completed(id=user_context.user_id)
+
+    result = await verify_profile_completion_service.is_completed(
+        id=user_context.user_id
+    )
 
     return ProfileCompletionStatus(
         personal_details=result[0],
@@ -167,3 +184,55 @@ async def get_college_by_name(
             CollegeLookupGet(name=college_name)
         )
     }
+
+
+# @profile_completion_router.post("/get-presigned-url")
+# async def get_presigned_url(
+#     cmd: FileUploadCommand,
+#     s3_bucket: S3BucketDependency,
+#     user_context: UserContextDependency,
+# ):
+#     url = await s3_bucket.get_upload_url(
+#         metadata=FileMetadata(
+#             key="profile-verification/" + str(user_context.user_id) + ".pdf",
+#             filename=cmd.filename,
+#             content_type=cmd.content_type,
+#         )
+#     )
+
+#     return {
+#         "presigned-url": url,
+#         "path": "profile-verification/" + str(user_context.user_id) + ".pdf",
+#     }
+
+
+@profile_completion_router.post("/initialize-upload")
+async def initialize_upload(
+    cmd: FileUploadCommand,
+    profile_verification_service: ProfileVerificationServiceDependency,
+    user_context: UserContextDependency,
+):
+    return await profile_verification_service.initialize(
+        InitializeMedia(
+            created_by=user_context.user_id,
+            filename=cmd.filename,
+            file_size=cmd.file_size,
+            content_type=cmd.content_type,
+        )
+    )
+
+
+@profile_completion_router.post("/upload-success")
+async def upload_success(
+    media_id: str,
+    profile_verification_service: ProfileVerificationServiceDependency,
+    user_context: UserContextDependency,
+):
+    return await profile_verification_service.create(
+        ProfileVerificationCreate(
+            id=user_context.user_id,
+            media_id=UUID(media_id),
+            created_by=user_context.user_id,
+            status=ProfileVerificationStatusEnum.PENDING,
+        )
+    )
