@@ -13,10 +13,10 @@ from src.exceptions import MediaNotFoundError
 
 
 class MediaService(BaseService[Media]):
-    _not_found_exc = MediaNotFoundError
+    _not_found_exc = MediaNotFoundError  # pyright: ignore[reportUnannotatedClassAttribute]
 
     def __init__(self, repo: MediaRepository):
-        self.repo = repo
+        self.repo = repo  # pyright: ignore[reportUnannotatedClassAttribute]
 
     async def create(
         self, cmd: MediaCreate, connection: Connection | None = None

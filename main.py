@@ -8,13 +8,13 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from src.api.exception_registry import exception_registry
 from src.api.routes.authentication import auth_router
-from src.api.routes.profile_completion import profile_completion_router
+from src.api.routes.profile import router as profile_router
 from src.dependencies import db
 from src.exceptions import DomainException
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI):  # pyright: ignore[reportUnusedParameter]
     await db.init_pool()
     yield
     await db.close_pool()
@@ -38,13 +38,15 @@ app.add_middleware(
 )
 app.add_middleware(SessionMiddleware, secret_key="some-secret-key")
 
-app.include_router(router=auth_router, prefix=api_prefix)
-app.include_router(router=profile_completion_router, prefix=api_prefix)
 
-
-@app.get(f"{api_prefix}/")
+@app.get(f"{api_prefix}/health-check", tags=["Health Check"], status_code=200)
 async def root():
-    return {"message": "Hello, World!"}
+    return {"message": "Server is running"}
+
+
+app.include_router(router=auth_router, prefix=api_prefix)
+app.include_router(router=profile_router, prefix=api_prefix)
+# app.include_router(router=profile_completion_router, prefix=api_prefix)
 
 
 @app.exception_handler(DomainException)

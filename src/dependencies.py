@@ -17,7 +17,9 @@ from src.command.services.profile_verification import ProfileVerificationService
 from src.command.services.verify_profile_completion import (
     VerifyProfileCompletionService,
 )
-from src.core.email import email_service
+from src.core.email.email_service import EmailService
+from src.core.email.provider import SMTPEmailProvider
+from src.core.email.renderer import EmailTemplateRenderer
 from src.core.security.jwt import JWTHandler
 from src.core.security.password import PasswordHasher
 from src.core.storage.s3 import S3Bucket, get_session
@@ -59,12 +61,27 @@ authentication_service = AuthenticationService(
 personal_service = PersonalDetailsService(repo=personal_repo)
 academic_service = AcademicDetailsService(repo=academic_repo)
 parental_service = ParentalDetailsService(repo=parental_repo)
+s3_bucket = S3Bucket(bucket_name=settings.s3.bucket, session=get_session())
+
+
+"""
+Profile Verification Dependencies
+"""
+profile_verification_repo = ProfileVerificationRepository(db=db)
+media_repo = MediaRepository(db=db)
+media_service = MediaService(repo=media_repo)
+profile_verification_service = ProfileVerificationService(
+    repo=profile_verification_repo,
+    media_service=media_service,
+    file_service=s3_bucket,
+)
 
 
 verify_profile_completion_service = VerifyProfileCompletionService(
     personal_service=personal_service,
     academic_service=academic_service,
     parental_service=parental_service,
+    profile_verification_service=profile_verification_service,
 )
 
 
@@ -91,20 +108,11 @@ s3_bucket = S3Bucket(bucket_name=settings.s3.bucket, session=get_session())
 Email Dependencies
 """
 
-email_service = email_service.EmailService(
-    provider=email_service.SMTPEmailProvider(),
-    renderer=email_service.EmailTemplateRenderer(),
-)
+smtp_email_provider = SMTPEmailProvider()
+email_template_renderer = EmailTemplateRenderer()
 
 
-"""
-Profile Verification Dependencies
-"""
-profile_verification_repo = ProfileVerificationRepository(db=db)
-media_repo = MediaRepository(db=db)
-media_service = MediaService(repo=media_repo)
-profile_verification_service = ProfileVerificationService(
-    repo=profile_verification_repo,
-    media_service=media_service,
-    file_service=s3_bucket,
+email_service = EmailService(
+    provider=smtp_email_provider,
+    renderer=email_template_renderer,
 )

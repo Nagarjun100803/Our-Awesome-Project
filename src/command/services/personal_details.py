@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from asyncpg import Connection
 
 from src.command.commands.personal_details import (
@@ -10,16 +12,17 @@ from src.command.commands.personal_details import (
 from src.command.repositories.personal_details import PersonalDetailsRepository
 from src.command.services.base import BaseService
 from src.exceptions import (
+    NotFoundException,
     PersonalDetailsAlreadyExistsError,
     PersonalDetailsNotFoundError,
 )
 
 
 class PersonalDetailsService(BaseService[PersonalDetails]):
-    _not_found_exc = PersonalDetailsNotFoundError
+    _not_found_exc: ClassVar[type[NotFoundException]] = PersonalDetailsNotFoundError
 
     def __init__(self, repo: PersonalDetailsRepository):
-        self.repo = repo
+        self.repo: PersonalDetailsRepository = repo
 
     async def create(
         self, cmd: PersonalDetailsCreate, connection: Connection | None = None

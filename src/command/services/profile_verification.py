@@ -1,4 +1,4 @@
-from typing import cast
+from typing import ClassVar, cast
 from uuid import UUID
 
 from asyncpg import Connection
@@ -20,6 +20,9 @@ from src.command.services.base import BaseService
 from src.command.services.media import MediaService
 from src.core.storage.s3 import FileMetadata, S3Bucket
 from src.exceptions import (
+    MediaNotFoundError,
+    NotFoundException,
+    ProfileVerificationAlreadyExistsError,
     ProfileVerificationNotFoundError,
 )
 
@@ -37,7 +40,7 @@ class InitializeMediaResponse(BaseCmd):
 
 
 class ProfileVerificationService(BaseService[ProfileVerification]):
-    _not_found_exc = ProfileVerificationNotFoundError
+    _not_found_exc: ClassVar[type[NotFoundException]] = ProfileVerificationNotFoundError
 
     def __init__(
         self,
@@ -45,9 +48,9 @@ class ProfileVerificationService(BaseService[ProfileVerification]):
         media_service: MediaService,
         file_service: S3Bucket,
     ) -> None:
-        self.repo = repo
-        self.media_service = media_service
-        self.file_service = file_service
+        self.repo: ProfileVerificationRepository = repo
+        self.media_service: MediaService = media_service
+        self.file_service: S3Bucket = file_service
 
     def _get_storage_key(self, filename: str, user_id: UUID) -> str:
         return f"profile_verifications/{user_id}/{filename}"
@@ -58,6 +61,12 @@ class ProfileVerificationService(BaseService[ProfileVerification]):
         """
         Initializes a media entity for profile verification and send upload url.
         """
+
+        if await self.repo.exists_by(id=cmd.created_by):
+            raise ProfileVerificationAlreadyExistsError(
+                message=f"Profile verification already exists for user id {cmd.created_by}"
+            )
+
         media_context = self.media_service._require_entity(
             await self.media_service.create(
                 cmd=MediaCreate(
@@ -69,6 +78,7 @@ class ProfileVerificationService(BaseService[ProfileVerification]):
                     storage_provider="Supabase S3",
                     status=MediaStatusEnum.PENDING,
                 ),
+                connection=connection,
             )
         )
         upload_url = await self.file_service.get_upload_url(
@@ -90,19 +100,21 @@ class ProfileVerificationService(BaseService[ProfileVerification]):
         """
         Creates a profile verification entity when the upload is Sucess.
         """
-        if await self.repo.exists_by(id=cmd.id):
-            raise self._not_found_exc(
+        if await self.repo.exists_by(id=cmd.id, connection=connection):
+            raise ProfileVerificationAlreadyExistsError(
                 message=f"Profile verification with id {cmd.id} already exists"
             )
 
         async with self.repo.db.transaction() as tconn:
-            await self.media_service.update(
-                cmd=MediaUpdate(
-                    id=cmd.media_id,
-                    status=MediaStatusEnum.UPLOADED,
-                    updated_by=cmd.created_by,
-                ),
-                connection=tconn,
+            _ = self.media_service._require_entity(
+                await self.media_service.update(
+                    cmd=MediaUpdate(
+                        id=cmd.media_id,
+                        status=MediaStatusEnum.UPLOADED,
+                        updated_by=cmd.created_by,
+                    ),
+                    connection=tconn,
+                )
             )
             return await self.repo.add(cmd, tconn)
 
@@ -118,6 +130,9 @@ class ProfileVerificationService(BaseService[ProfileVerification]):
             await self.media_service.get(MediaGet(id=profile_verification_cmd.media_id))
         )
 
+        if media_cmd.status != MediaStatusEnum.UPLOADED:
+            raise MediaNotFoundError(f"Media with id {media_cmd.id} is not uploaded")
+
         return await self.file_service.get_view_url(
             metadata=FileMetadata(
                 key=media_cmd.storage_key,
@@ -128,35 +143,7 @@ class ProfileVerificationService(BaseService[ProfileVerification]):
 
     async def upload_failure(
         self, cmd: MediaUpdate, connection: Connection | None = None
-    ):
-        await self.media_service.update(cmd, connection)
-
-    # async def create(
-    #     self, cmd: ProfileVerificationCreate, connection: Connection | None = None
-    # ) -> ProfileVerification:
-
-    #     if self.repo.exists_by(id=cmd.id):
-    #         raise self._not_found_exc(
-    #             message=f"Profile verification with id {cmd.id} already exists"
-    #         )
-
-    #     return await self.repo.add(cmd, connection)
-
-    # async def update(
-    #     self, cmd: ProfileVerificationUpdate, connection: Connection | None = None
-    # ) -> ProfileVerification:
-    #     return self._require_entity(await self.repo.update(cmd, connection))
-
-    # async def delete(
-    #     self, cmd: ProfileVerificationDelete, connection: Connection | None = None
-    # ) -> ProfileVerification:
-    #     return self._require_entity(
-    #         await self.repo.delete(cmd=cmd, connection=connection)
-    #     )
-
-    # async def get(
-    #     self, cmd: ProfileVerificationGet, connection: Connection | None = None
-    # ) -> ProfileVerification:
-    #     return self._require_entity(
-    #         await self.repo.get(query=cmd, connection=connection)
-    #     )
+    ) -> None:
+        _ = self.media_service._require_entity(
+            await self.media_service.update(cmd, connection)
+        )

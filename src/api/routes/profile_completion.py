@@ -11,7 +11,6 @@ from src.api.dependencies import (
     ParentalDetailsServiceDependency,
     PersonalDetailsServiceDependency,
     ProfileVerificationServiceDependency,
-    S3BucketDependency,
     UserContextDependency,
     VerifyProfileCompletionServiceDependency,
     require_role,
@@ -33,19 +32,21 @@ from src.command.commands.academic_details import (
     LevelOfEducationEnum,
 )
 from src.command.commands.college_lookup import CollegeLookupGet
+from src.command.commands.media import MediaStatusEnum, MediaUpdate
 from src.command.commands.personal_details import PersonalDetailsCreate
 from src.command.commands.profile_verification import (
     ProfileVerificationCreate,
+    ProfileVerificationGet,
     ProfileVerificationStatusEnum,
 )
 from src.command.commands.users import UserRole
 from src.command.services.profile_verification import InitializeMedia
-from src.core.storage.s3 import FileMetadata
 
 profile_completion_router = APIRouter(
     prefix="/profile-completion",
     tags=["Complete Your Profile"],
     dependencies=[Depends(require_role(UserRole.STUDENT))],
+    deprecated=True,
 )
 
 
@@ -161,6 +162,7 @@ async def get_completion_status(
         personal_details=result[0],
         academic_details=result[1],
         parental_details=result[2],
+        id_uploaded=result[3],
     )
 
 
@@ -235,4 +237,30 @@ async def upload_success(
             created_by=user_context.user_id,
             status=ProfileVerificationStatusEnum.PENDING,
         )
+    )
+
+
+@profile_completion_router.delete("/upload-failure")
+async def file_upload_failure(
+    media_id: str,
+    profile_verification_service: ProfileVerificationServiceDependency,
+    user_context: UserContextDependency,
+):
+    await profile_verification_service.upload_failure(
+        MediaUpdate(
+            id=UUID(media_id),
+            status=MediaStatusEnum.FAILED,
+            updated_by=user_context.user_id,
+        )
+    )
+
+
+@profile_completion_router.get("/get-document/{id}")
+async def get_profile_completion(
+    id: str,
+    profile_verification_service: ProfileVerificationServiceDependency,
+    user_context: UserContextDependency,
+):
+    return await profile_verification_service.get_file_url(
+        cmd=ProfileVerificationGet(id=UUID(id))
     )

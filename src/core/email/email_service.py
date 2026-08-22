@@ -16,18 +16,18 @@ class EmailService:
         renderer: EmailTemplateRenderer,
     ) -> None:
 
-        self.provider = provider
-        self.renderer = renderer
+        self.provider: SMTPEmailProvider = provider
+        self.renderer: EmailTemplateRenderer = renderer
 
     async def send_template_one(
         self,
         context: EmailVerification | SetPassword,
     ) -> None:
 
-        html = self.renderer.render(
+        html = self.renderer.render(  # pyright: ignore[reportUnknownMemberType]
             context.template,
             subject=context.subject,
-            **context.model_dump(exclude={"template", "subject", "email", "fallback"}),
+            **context.model_dump(exclude={"template", "subject", "email", "fallback"}),  # pyright: ignore[reportAny]
         )
 
         message = EmailMessage(
@@ -40,25 +40,3 @@ class EmailService:
         )
 
         await self.provider.send(message)
-
-
-async def main():
-    service = EmailService(
-        provider=SMTPEmailProvider(),
-        renderer=EmailTemplateRenderer(),
-    )
-
-    await service.send_template_one(
-        context=EmailVerification(
-            template="verify_email.html",
-            email="arulsampathcyr@gmail.com",
-            url="http://localhost:8000/docs",
-            name="Arul S",
-        ),
-    )
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(main())

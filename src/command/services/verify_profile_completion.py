@@ -13,6 +13,7 @@ from src.command.commands.personal_details import (
 from src.command.services.academic_details import AcademicDetailsService
 from src.command.services.parental_details import ParentalDetailsService
 from src.command.services.personal_details import PersonalDetailsService
+from src.command.services.profile_verification import ProfileVerificationService
 
 
 class VerifyProfileCompletionService:
@@ -21,10 +22,14 @@ class VerifyProfileCompletionService:
         personal_service: PersonalDetailsService,
         parental_service: ParentalDetailsService,
         academic_service: AcademicDetailsService,
+        profile_verification_service: ProfileVerificationService,
     ) -> None:
-        self.personal_service = personal_service
-        self.parental_service = parental_service
-        self.academic_service = academic_service
+        self.personal_service: PersonalDetailsService = personal_service
+        self.parental_service: ParentalDetailsService = parental_service
+        self.academic_service: AcademicDetailsService = academic_service
+        self.profile_verification_service: ProfileVerificationService = (
+            profile_verification_service
+        )
 
     async def is_completed(self, id: UUID):
         """
@@ -34,6 +39,7 @@ class VerifyProfileCompletionService:
             self.personal_service.exists_by(cmd=PersonalDetailsGet(id=id)),
             self.academic_service.exists_by(cmd=AcademicDetailsGetAll(id=id)),
             self.parental_service.exists_by(cmd=ParentalDetailsGet(id=id)),
+            self.profile_verification_service.repo.exists_by(id=id),
         )
 
         return records  # [true, true, true]

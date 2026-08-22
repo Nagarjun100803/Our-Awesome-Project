@@ -19,10 +19,10 @@ Why we need to map the status code for the respective exceptions in exception_re
 
 
 class DomainException(Exception):
-    error_code = "DOMAIN_ERROR"
-    message = "Internal Server Errror"
+    error_code: str = "DOMAIN_ERROR"
+    message: str = "Internal Server Errror"
 
-    def __init__(self, message: str | None = None, **kwargs):
+    def __init__(self, message: str | None = None, **kwargs):  # pyright: ignore[reportUnknownParameterType, reportMissingParameterType]
         if message:
             self.message = message
         super().__init__(self.message)
@@ -35,33 +35,33 @@ class DomainException(Exception):
 
 
 class AuthenticationException(DomainException):
-    error_code = "AUTHENTICATION_ERROR"
-    message = "Authentication failed"
+    error_code: str = "AUTHENTICATION_ERROR"
+    message: str = "Authentication failed"
 
 
 class InvalidCredentialsError(AuthenticationException):
-    error_code = "INVALID_CREDENTIALS"
-    message = "Invalid Email or Password"
+    error_code: str = "INVALID_CREDENTIALS"
+    message: str = "Invalid Email or Password"
 
 
 class InvalidTokenError(AuthenticationException):
-    error_code = "INVALID_TOKEN"
-    message = "Invalid Authentication Token"
+    error_code: str = "INVALID_TOKEN"
+    message: str = "Invalid Authentication Token"
 
 
 class ExpiredTokenError(AuthenticationException):
-    error_code = "EXPIRED_TOKEN"
-    message = "Authentication Token is Expired"
+    error_code: str = "EXPIRED_TOKEN"
+    message: str = "Authentication Token is Expired"
 
 
 class MissingTokenError(AuthenticationException):
-    error_code = "MISSING_TOKEN"
-    message = "Authentication Token is missing"
+    error_code: str = "MISSING_TOKEN"
+    message: str = "Authentication Token is missing"
 
 
 class BadTokenError(AuthenticationException):
-    error_code = "BAD_TOKEN"
-    message = "Invalid Authentication Token"
+    error_code: str = "BAD_TOKEN"
+    message: str = "Invalid Authentication Token"
 
 
 #   Not Found Exceptions
@@ -71,68 +71,65 @@ class BadTokenError(AuthenticationException):
 
 
 class NotFoundException(DomainException):
-    error_code = "NOT_FOUND"
-    _entity = "Resource"
-    message = f"{_entity} not found"
+    error_code: str = "NOT_FOUND"
+    _entity: str = "Resource"
+    message: str = f"{_entity} not found"
 
-    def __init__(self, message: str | None = None, **kwargs):
-        self.message = f"{self._entity} not found with"
-        for key, value in kwargs.items():
-            self.message = self.message + f"{key}: {value} , "
+    def __init__(self, message: str | None = None, **kwargs):  # pyright: ignore[reportMissingParameterType, reportUnknownParameterType]
         if message is None:
-            super().__init__(self.message)
+            super().__init__(self.message)  # pyright: ignore[reportUnknownMemberType]
         else:
-            super().__init__(message=message)
+            super().__init__(message=message)  # pyright: ignore[reportUnknownMemberType]
 
 
 class UserNotFoundError(NotFoundException):
-    error_code = "USER_NOT_FOUND"
-    _entity = "User"
+    error_code: str = "USER_NOT_FOUND"
+    _entity: str = "User"
 
 
 class OpenIDConnectNotFoundError(NotFoundException):
-    error_code = "OPENID_CONNECT_NOT_FOUND"
-    _entity = "OpenIDConnect"
+    error_code: str = "OPENID_CONNECT_NOT_FOUND"
+    _entity: str = "OpenIDConnect"
 
 
 class PasswordNotFoundError(NotFoundException):
-    error_code = "PASSWORD_NOT_FOUND"
-    _entity = "Password"
+    error_code: str = "PASSWORD_NOT_FOUND"
+    _entity: str = "Password"
 
 
 class PersonalDetailsNotFoundError(NotFoundException):
-    error_code = "PERSONAL_DETAILS_NOT_FOUND"
-    _entity = "PersonalDetails"
+    error_code: str = "PERSONAL_DETAILS_NOT_FOUND"
+    _entity: str = "PersonalDetails"
 
 
 class AcademicDetailsNotFoundError(NotFoundException):
-    error_code = "ACADEMIC_DETAILS_NOT_FOUND"
-    _entity = "AcademicDetails"
+    error_code: str = "ACADEMIC_DETAILS_NOT_FOUND"
+    _entity: str = "AcademicDetails"
 
 
 class AcademicWithEnrollmentsNotFoundError(NotFoundException):
-    error_code = "ACADEMIC_WITH_ENROLLMENTS_NOT_FOUND"
-    _entity = "AcademicDetails with Enrollment not found"
+    error_code: str = "ACADEMIC_WITH_ENROLLMENTS_NOT_FOUND"
+    _entity: str = "AcademicDetails with Enrollment not found"
 
 
 class ParentalDetailsNotFoundError(NotFoundException):
-    error_code = "PARENTAL_DETAILS_NOT_FOUND"
-    _entity = "ParentalDetails"
+    error_code: str = "PARENTAL_DETAILS_NOT_FOUND"
+    _entity: str = "ParentalDetails"
 
 
 class PincodeNotFoundError(NotFoundException):
-    error_code = "PINCODE_NOT_FOUND"
-    _entity = "Pincode"
+    error_code: str = "PINCODE_NOT_FOUND"
+    _entity: str = "Pincode"
 
 
 class MediaNotFoundError(NotFoundException):
-    error_code = "MEDIA_NOT_FOUND"
-    _entity = "Media"
+    error_code: str = "MEDIA_NOT_FOUND"
+    _entity: str = "Media"
 
 
 class ProfileVerificationNotFoundError(NotFoundException):
-    error_code = "PROFILE_VERIFICATION_NOT_FOUND"
-    _entity = "ProfileVerification"
+    error_code: str = "PROFILE_VERIFICATION_NOT_FOUND"
+    _entity: str = "ProfileVerification"
 
 
 # conflict Exceptions:
@@ -146,54 +143,59 @@ class ConflictException(DomainException):
 
 
 class EmailVerificationError(ConflictException):
-    error_code = "EMAIL_VERIFICATION_ERROR"
-    message = "Email verification error"
+    error_code: str = "EMAIL_VERIFICATION_ERROR"
+    message: str = "Email verification error"
 
 
 class UserAlreadyExistsError(ConflictException):
-    error_code = "USER_ALREADY_EXISTS"
-    message = "User Already Exists"
+    error_code: str = "USER_ALREADY_EXISTS"
+    message: str = "User Already Exists"
 
 
 class PersonalDetailsAlreadyExistsError(ConflictException):
-    error_code = "PERSONAL_DETAILS_ALREADY_EXISTS"
-    message = "Personal details already exists"
+    error_code: str = "PERSONAL_DETAILS_ALREADY_EXISTS"
+    message: str = "Personal details already exists"
 
 
 class AcademicDetailsAlreadyExistsError(ConflictException):
-    error_code = "ACADEMIC_DETAILS_ALREADY_EXISTS"
-    message = "Academic details already exists"
+    error_code: str = "ACADEMIC_DETAILS_ALREADY_EXISTS"
+    message: str = "Academic details already exists"
 
 
 class ParentalDetailsAlreadyExistsError(ConflictException):
-    error_code = "PARENTAL_DETAILS_ALREADY_EXISTS"
-    message = "Parental details already exists"
+    error_code: str = "PARENTAL_DETAILS_ALREADY_EXISTS"
+    message: str = "Parental details already exists"
 
 
 #   Validation Exceptions
 class ValidationException(DomainException):
-    error_code = "VALIDATION_ERROR"
-    message = "Validation failed"
+    error_code: str = "VALIDATION_ERROR"
+    message: str = "Validation failed"
 
 
 class PasswordConfirmMismatchError(ValidationException):
-    error_code = "INVALID_PASSWORD_CONFIRMATION"
-    message = "Password and confirmation do not match"
+    error_code: str = "INVALID_PASSWORD_CONFIRMATION"
+    message: str = "Password and confirmation do not match"
 
 
 class NameLengthError(ValidationException):
-    error_code = "NAME_LENGTH_ERROR"
-    message = "Name length is invalid"
+    error_code: str = "NAME_LENGTH_ERROR"
+    message: str = "Name length is invalid"
 
 
 class AcademicDetailsNotUnique(ValidationException):
-    error_code = "ACADEMIC_DETAILS_NOT_UNIQUE"
-    message = "Academic details are not unique"
+    error_code: str = "ACADEMIC_DETAILS_NOT_UNIQUE"
+    message: str = "Academic details are not unique"
 
 
 class ParentalDetailsError(ValidationException):
-    error_code = "PARENTAL_DETAILS_ERROR"
-    message = "Only one of father, mother, or guardian can be provided"
+    error_code: str = "PARENTAL_DETAILS_ERROR"
+    message: str = "Only one of father, mother, or guardian can be provided"
+
+
+class ProfileVerificationAlreadyExistsError(ConflictException):
+    error_code: str = "PROFILE_VERIFICATION_ALREADY_EXISTS"
+    message: str = "Profile verification already exists"
 
 
 """
@@ -204,24 +206,24 @@ Security Errors - Authorization Related Errors
 class SecurityException(DomainException):
     """Base class for authentication and authorization errors."""
 
-    error_code = "SECURITY_ERROR"
+    error_code: str = "SECURITY_ERROR"
 
-    message = "A Security error occurred."
+    message: str = "A Security error occurred."
 
 
 class EmailNotVerifiedError(SecurityException):
-    error_code = "EMAIL_NOT_VERIFIED"
-    message = "Email not verified."
+    error_code: str = "EMAIL_NOT_VERIFIED"
+    message: str = "Email not verified."
 
 
 class UnAuthorizedError(SecurityException):
-    error_code = "UNAUTHORIZED"
-    message = "Unauthorized."
+    error_code: str = "UNAUTHORIZED"
+    message: str = "Unauthorized."
 
 
 class UnAuthenticatedError(SecurityException):
-    error_code = "UNAUTHENTICATED"
-    message = "Unauthenticated."
+    error_code: str = "UNAUTHENTICATED"
+    message: str = "Unauthenticated."
 
 
 """
@@ -231,10 +233,10 @@ Raised when an external/upstream service fails.
 
 
 class ExternalServiceException(DomainException):
-    error_code = "EXTERNAL_SERVICE_ERROR"
-    message = "External service error"
+    error_code: str = "EXTERNAL_SERVICE_ERROR"
+    message: str = "External service error"
 
 
 class PostalServiceError(ExternalServiceException):
-    error_code = "POSTAL_SERVICE_ERROR"
-    message = "Postal service is currently unavailable"
+    error_code: str = "POSTAL_SERVICE_ERROR"
+    message: str = "Postal service is currently unavailable"

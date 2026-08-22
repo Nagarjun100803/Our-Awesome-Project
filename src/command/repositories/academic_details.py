@@ -27,12 +27,14 @@ class AcademicDetailsRepository(BaseRepository[AcademicDetails]):
             return None
         return AcademicDetails.model_validate(dict(row))
 
+    @override
     async def add(
         self, cmd: BaseModel, connection: Connection | None = None
     ) -> AcademicDetails:
         cmd = self._normalize(cmd=cmd, model=AcademicDetailsCreate)
         return await super().add(cmd, connection)
 
+    @override
     async def update(
         self, cmd: BaseModel, connection: Connection | None = None
     ) -> AcademicDetails | None:
@@ -101,6 +103,7 @@ class AcademicDetailsRepository(BaseRepository[AcademicDetails]):
 
         return [cast(AcademicDetails, self._to_domain(x)) for x in result]
 
+    @override
     async def get(
         self, query: BaseModel, connection: Connection | None = None
     ) -> AcademicDetails | None:
@@ -129,6 +132,7 @@ class AcademicDetailsRepository(BaseRepository[AcademicDetails]):
 
         return self._to_domain(result)
 
+    @override
     async def delete(
         self, cmd: BaseModel, connection: Connection | None = None
     ) -> AcademicDetails | None:

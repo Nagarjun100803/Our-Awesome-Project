@@ -1,5 +1,4 @@
-import asyncio
-from uuid import UUID
+from typing import ClassVar
 
 from asyncpg import Connection
 
@@ -10,23 +9,22 @@ from src.command.commands.academic_details import (
     AcademicDetailsGet,
     AcademicDetailsGetAll,
     AcademicDetailsUpadate,
-    LevelOfEducationEnum,
 )
 from src.command.repositories.academic_details import AcademicDetailsRepository
 from src.command.services.base import BaseService
-from src.database import DBManager
 from src.exceptions import (
     AcademicDetailsAlreadyExistsError,
     AcademicDetailsNotFoundError,
     AcademicWithEnrollmentsNotFoundError,
+    NotFoundException,
 )
 
 
 class AcademicDetailsService(BaseService[AcademicDetails]):
-    _not_found_exc = AcademicDetailsNotFoundError
+    _not_found_exc: ClassVar[type[NotFoundException]] = AcademicDetailsNotFoundError
 
     def __init__(self, repo: AcademicDetailsRepository):
-        self.repo = repo
+        self.repo: AcademicDetailsRepository = repo
 
     async def create(
         self, cmd: AcademicDetailsCreate, connection: Connection | None = None
@@ -78,7 +76,7 @@ class AcademicDetailsService(BaseService[AcademicDetails]):
         records = await self.repo.get_all(query=cmd, connection=connection)
 
         for record in records:
-            self._require_entity(record)
+            _ = self._require_entity(record)
 
         return records
 
@@ -100,23 +98,3 @@ class AcademicDetailsService(BaseService[AcademicDetails]):
             )
 
         return True
-
-
-async def main():
-    db = DBManager()
-    await db.init_pool()
-
-    service = AcademicDetailsService(repo=AcademicDetailsRepository(db))
-
-    await service.delete(
-        cmd=AcademicDetailsDelete(
-            id=UUID("522cc2cf-e3e8-46f3-9457-0d3dbddaa850"),
-            deleted_by=UUID("522cc2cf-e3e8-46f3-9457-0d3dbddaa850"),
-            level_of_education=LevelOfEducationEnum.SCHOOL_10TH,
-        )
-    )
-    await db.close_pool()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())

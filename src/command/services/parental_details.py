@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from asyncpg import Connection
 
 from src.command.commands.parental_details import (
@@ -10,16 +12,17 @@ from src.command.commands.parental_details import (
 from src.command.repositories.parental_details import ParentalDetailsRepository
 from src.command.services.base import BaseService
 from src.exceptions import (
+    NotFoundException,
     ParentalDetailsAlreadyExistsError,
     ParentalDetailsNotFoundError,
 )
 
 
 class ParentalDetailsService(BaseService[ParentalDetails]):
-    _not_found_exc = ParentalDetailsNotFoundError
+    _not_found_exc: ClassVar[type[NotFoundException]] = ParentalDetailsNotFoundError
 
     def __init__(self, repo: ParentalDetailsRepository):
-        self.repo = repo
+        self.repo: ParentalDetailsRepository = repo
 
     async def create(
         self, cmd: ParentalDetailsCreate, connection: Connection | None = None

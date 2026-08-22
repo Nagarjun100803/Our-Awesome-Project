@@ -1,7 +1,7 @@
 from typing import ClassVar, override
 
 from asyncpg import Connection
-from asyncpg.protocol import Record
+from asyncpg.protocol.record import Record
 from pydantic import BaseModel
 
 from src.command.commands.parental_details import (

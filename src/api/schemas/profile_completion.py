@@ -119,10 +119,10 @@ class AcademicCreateSchema(BaseCmd):
     ] = None
     score: Annotated[
         str | None,
-        Field(description="Score e.g., 90.5, 85.0, 9.0"),
+        Field(description="Score e.g., 90.5, 85.0, 9.0", max_length=5),
     ] = None
     current_semester: Annotated[
-        int | None, Field(description="Current Semester e.g., 1, 2, 3")
+        int | None, Field(description="Current Semester e.g., 1, 2, 3", le=20)
     ] = None
     currently_enrolled: Annotated[
         bool,
@@ -148,10 +148,10 @@ class AcademicUpdateSchema(BaseCmd):
     ] = None
     score: Annotated[
         str | None,
-        Field(description="Score e.g., 90.5, 85.0, 9.0"),
+        Field(description="Score e.g., 90.5, 85.0, 9.0", max_length=5),
     ] = None
     current_semester: Annotated[
-        int | None, Field(description="Current Semester e.g., 1, 2, 3")
+        int | None, Field(description="Current Semester e.g., 1, 2, 3", le=20)
     ] = None
     currently_enrolled: Annotated[
         bool | None,
@@ -171,6 +171,7 @@ class ProfileCompletionStatus(BaseCmd):
     parental_details: Annotated[
         bool, Field(description="Used to Check the parental details completed")
     ]
+    id_uploaded: Annotated[bool, Field(description="Used to Check the ID uploaded")]
 
 
 class PincodeLookupResponse(BaseCmd):
