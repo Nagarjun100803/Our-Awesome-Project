@@ -1,5 +1,4 @@
 from typing import Any, ClassVar, override
-from uuid import UUID
 
 from asyncpg import Connection
 from asyncpg.protocol.record import Record

@@ -1,3 +1,5 @@
+from fastapi import BackgroundTasks
+
 from src.command.repositories.academic_details import AcademicDetailsRepository
 from src.command.repositories.college_lookup import CollegeLookupRepository
 from src.command.repositories.media import MediaRepository
@@ -14,6 +16,7 @@ from src.command.services.media import MediaService
 from src.command.services.parental_details import ParentalDetailsService
 from src.command.services.personal_details import PersonalDetailsService
 from src.command.services.profile_verification import ProfileVerificationService
+from src.command.services.users import UserService
 from src.command.services.verify_profile_completion import (
     VerifyProfileCompletionService,
 )
@@ -115,4 +118,16 @@ email_template_renderer = EmailTemplateRenderer()
 email_service = EmailService(
     provider=smtp_email_provider,
     renderer=email_template_renderer,
+)
+
+
+"""
+User Service Dependencies
+"""
+
+
+user_service = UserService(
+    user_repo=user_repo,
+    email_service=email_service,
+    password_handler=password_hasher,
 )

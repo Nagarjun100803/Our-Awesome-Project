@@ -1,6 +1,6 @@
 # src/email/service.py
 
-from src.core.email.models import EmailVerification, SetPassword
+from src.core.email.models import AccountCreation, EmailVerification, SetPassword
 from src.core.email.provider import (
     EmailBody,
     EmailMessage,
@@ -21,13 +21,13 @@ class EmailService:
 
     async def send_template_one(
         self,
-        context: EmailVerification | SetPassword,
+        context: EmailVerification | SetPassword | AccountCreation,
     ) -> None:
 
         html = self.renderer.render(  # pyright: ignore[reportUnknownMemberType]
             context.template,
             subject=context.subject,
-            **context.model_dump(exclude={"template", "subject", "email", "fallback"}),  # pyright: ignore[reportAny]
+            **context.model_dump(exclude={"template", "subject", "fallback"}),  # pyright: ignore[reportAny]
         )
 
         message = EmailMessage(

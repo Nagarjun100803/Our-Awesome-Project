@@ -11,6 +11,7 @@ from src.command.services.location_lookup import LocationLookupService
 from src.command.services.parental_details import ParentalDetailsService
 from src.command.services.personal_details import PersonalDetailsService
 from src.command.services.profile_verification import ProfileVerificationService
+from src.command.services.users import UserService
 from src.command.services.verify_profile_completion import (
     VerifyProfileCompletionService,
 )
@@ -26,6 +27,7 @@ from src.dependencies import (
     personal_service,
     profile_verification_service,
     s3_bucket,
+    user_service,
     verify_profile_completion_service,
 )
 from src.exceptions import UnAuthenticatedError, UnAuthorizedError
@@ -187,3 +189,15 @@ def get_profile_verification_service() -> ProfileVerificationService:
 ProfileVerificationServiceDependency = Annotated[
     ProfileVerificationService, Depends(get_profile_verification_service)
 ]
+
+
+"""
+User Service Dependency
+"""
+
+
+def get_user_service() -> UserService:
+    return user_service
+
+
+UserServiceDependency = Annotated[UserService, Depends(get_user_service)]

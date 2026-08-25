@@ -3,7 +3,6 @@ from typing import Annotated, Self
 from uuid import UUID
 
 from pydantic import Field, model_validator
-from pydantic.functional_validators import field_validator
 
 from src.command.commands.academic_details import (
     GradingSystemEnum,
