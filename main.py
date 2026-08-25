@@ -40,7 +40,10 @@ app.add_middleware(SessionMiddleware, secret_key="some-secret-key")
 
 
 @app.get(f"{api_prefix}/health-check", tags=["Health Check"], status_code=200)
-async def root():
+async def root(request: Request):
+
+    origin = request.headers.get("referer")
+    print(origin)
     return {"message": "Server is running"}
 
 

@@ -3,7 +3,7 @@ from uuid import UUID
 
 from asyncpg import Connection
 
-from src.command.commands.base import BaseCmd
+from src.api.schemas.profile_completion import InitializeMedia, InitializeMediaResponse
 from src.command.commands.media import (
     MediaCreate,
     MediaGet,
@@ -25,18 +25,6 @@ from src.exceptions import (
     ProfileVerificationAlreadyExistsError,
     ProfileVerificationNotFoundError,
 )
-
-
-class InitializeMedia(BaseCmd):
-    created_by: UUID
-    filename: str
-    file_size: int
-    content_type: str
-
-
-class InitializeMediaResponse(BaseCmd):
-    presigned_url: str
-    media_id: UUID
 
 
 class ProfileVerificationService(BaseService[ProfileVerification]):
@@ -85,7 +73,7 @@ class ProfileVerificationService(BaseService[ProfileVerification]):
             metadata=FileMetadata(
                 key=self._get_storage_key(cmd.filename, cmd.created_by),
                 filename=cmd.filename,
-                content_type=cmd.content_type,
+                content_type=cmd.content_type.value,
             )
         )
 
@@ -137,7 +125,7 @@ class ProfileVerificationService(BaseService[ProfileVerification]):
             metadata=FileMetadata(
                 key=media_cmd.storage_key,
                 filename=media_cmd.filename,
-                content_type=media_cmd.content_type,
+                content_type=media_cmd.content_type.value,
             )
         )
 

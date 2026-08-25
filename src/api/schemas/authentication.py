@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated, Self
 
 from pydantic import EmailStr, Field
@@ -82,3 +83,10 @@ class ContextFromProvider(BaseCmd):
         str,
         Field(description="Unique identifier of the user which has given by provider"),
     ]
+
+
+class LoginResponseSchema(BaseCmd):
+    access_token: Annotated[str, Field(description="Access token of the user")]
+    last_login: Annotated[
+        datetime | None, Field(description="Last login of the user")
+    ] = None

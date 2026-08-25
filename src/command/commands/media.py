@@ -1,4 +1,4 @@
-from enum import StrEnum
+from enum import Enum, StrEnum
 from typing import Annotated
 from uuid import UUID
 
@@ -20,6 +20,13 @@ CREATE TABLE IF NOT EXISTS media (
 """
 
 
+class MediaContentType(str, Enum):
+    PDF = "application/pdf"
+    JPG = "image/jpeg"
+    PNG = "image/png"
+    DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+
 class MediaStatusEnum(StrEnum):
     PENDING = "pending"
     FAILED = "failed"
@@ -34,7 +41,7 @@ class Media(BaseCmd):
         str, Field(description="Storage key path of the file which stored in storage")
     ]
     file_size: Annotated[int, Field(description="File size")]
-    content_type: Annotated[str, Field(description="Content type")]
+    content_type: Annotated[MediaContentType, Field(description="Content type")]
     status: Annotated[
         MediaStatusEnum,
         Field(description="Media status", default=MediaStatusEnum.PENDING),

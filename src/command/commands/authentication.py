@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -58,3 +59,11 @@ class UserContext(BaseCmd):
     username: Annotated[str, Field(description="Username")]
     email: Annotated[EmailStr, Field(description="Email address")]
     role: Annotated[UserRole, Field(description="User role")]
+
+
+class UpdateLastLogin(BaseCmd):
+    """
+    Command to update last login.
+    """
+
+    user_id: Annotated[UUID, Field(description="User ID")]

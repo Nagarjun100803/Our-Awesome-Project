@@ -28,6 +28,8 @@ async def initialize_upload(
     profile_verification_service: ProfileVerificationServiceDependency,
     user_context: UserContextDependency,
 ):
+
+    print(cmd)
     return await profile_verification_service.initialize(
         InitializeMedia(
             created_by=user_context.user_id,

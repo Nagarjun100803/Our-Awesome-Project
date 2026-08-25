@@ -3,12 +3,14 @@ from typing import Annotated, Self
 from uuid import UUID
 
 from pydantic import Field, model_validator
+from pydantic.functional_validators import field_validator
 
 from src.command.commands.academic_details import (
     GradingSystemEnum,
     LevelOfEducationEnum,
 )
 from src.command.commands.base import BaseCmd
+from src.command.commands.media import MediaContentType
 from src.command.commands.parental_details import (
     AnnualFamilyIncomeEnum,
     OccupationEnum,
@@ -192,5 +194,24 @@ class FileUploadCommand(BaseCmd):
     filename: Annotated[str, Field(description="The name of the file")]
     file_size: Annotated[int, Field(description="The size of the file")]
     content_type: Annotated[
-        str, Field(description="The content type of the file like application/pdf")
+        MediaContentType,
+        Field(description="The content type of the file like application/pdf"),
     ]
+
+
+class InitializeMedia(BaseCmd):
+    created_by: Annotated[
+        UUID, Field(description="The ID of the user who created the media")
+    ]
+    filename: Annotated[str, Field(description="The name of the file")]
+    file_size: Annotated[
+        int, Field(description="The size of the file", lt=1024 * 1024 * 5)
+    ]
+    content_type: Annotated[
+        MediaContentType, Field(description="The content type of the file")
+    ]
+
+
+class InitializeMediaResponse(BaseCmd):
+    presigned_url: Annotated[str, Field(description="The presigned URL of the media")]
+    media_id: Annotated[UUID, Field(description="The ID of the media")]

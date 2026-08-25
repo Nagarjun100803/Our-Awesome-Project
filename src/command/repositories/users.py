@@ -1,10 +1,12 @@
 from typing import Any, ClassVar, override
+from uuid import UUID
 
 from asyncpg import Connection
 from asyncpg.protocol.record import Record
 from pydantic import BaseModel
-from pypika import Criterion, Parameter, PostgreSQLQuery, Table
+from pypika import Criterion, Parameter, PostgreSQLQuery, Table, functions
 
+from src.command.commands.authentication import UpdateLastLogin
 from src.command.commands.users import (
     User,
     UserCreate,
@@ -38,6 +40,37 @@ class UserRepository(BaseRepository[User]):
 
         cmd = self._normalize(cmd=cmd, model=UserUpdate)
         return await super().update(cmd=cmd, connection=connection)
+
+    async def update_last_login(
+        self, cmd: BaseModel, connection: Connection | None = None
+    ) -> User | None:
+        cmd = self._normalize(cmd=cmd, model=UpdateLastLogin)
+
+        "Updates the last login timestamp for a user in the database."
+
+        table = Table(self.tablename)
+        id = self._validate_id(getattr(cmd, "user_id", None))
+        updated_id = self._validate_id(getattr(cmd, "user_id", None))
+
+        update_query = PostgreSQLQuery.update(table).where(
+            Criterion.all(
+                terms=[table.id == Parameter("$1"), table.deleted_at.isnull()]
+            )
+        )
+
+        values = [id]
+        # Set updated_at to current timestamp
+        update_query = update_query.set("updated_at", functions.Now())
+        update_query = update_query.set("last_login", functions.Now())
+        update_query = update_query.set("updated_by", updated_id)
+        update_query: Any = update_query.returning("*")  # type: ignore
+        sql: str = update_query.get_sql()
+
+        executable = ExecutableSQL(sql=sql, values=tuple(values))
+
+        result = await self.db.execute(executable, fetch_returns="one")
+
+        return self._to_domain(result)
 
     async def delete(
         self, cmd: BaseModel, connection: Connection | None = None

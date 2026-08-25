@@ -1,13 +1,20 @@
 from typing import ClassVar, cast
 
+from asyncpg import Connection
 from itsdangerous import BadSignature, SignatureExpired
 
-from src.api.schemas.authentication import ContextFromProvider, ForgotPassword, Login
+from src.api.schemas.authentication import (
+    ContextFromProvider,
+    ForgotPassword,
+    Login,
+    LoginResponseSchema,
+)
 from src.command.commands.authentication import (
     EmailVerificationContext,
     GetUserByToken,
     ResetPasswordByToken,
     ResetPasswordContext,
+    UpdateLastLogin,
     UserContext,
     VerifyEmailByToken,
 )
@@ -59,6 +66,13 @@ class AuthenticationService(BaseService[User]):
         self.jwt_handler: JWTHandler = jwt_handler
         self.provider_repo: ProviderRepository = provider_repo
 
+    async def _update_last_login(
+        self, cmd: UpdateLastLogin, connection: Connection | None = None
+    ) -> User:
+        return self._require_entity(
+            await self.user_repo.update_last_login(cmd=cmd, connection=connection)
+        )
+
     async def signup(self, cmd: UserCreate) -> User:
         """Registers a new user with the given details."""
 
@@ -90,6 +104,8 @@ class AuthenticationService(BaseService[User]):
 
         if not user.email_verified:
             raise EmailNotVerifiedError(message="Email not verified.")
+
+        _ = await self._update_last_login(UpdateLastLogin(user_id=user.id))
 
         # Encode the JWT token and return it.
         return self.jwt_handler.create_jwt_token(
@@ -135,6 +151,8 @@ class AuthenticationService(BaseService[User]):
                     cmd=UserUpdate(id=user.id, email_verified=True, updated_by=user.id)
                 )
                 user = self._require_entity(user)
+
+            _ = await self._update_last_login(UpdateLastLogin(user_id=user.id))
 
             return self.jwt_handler.create_jwt_token(
                 payload=JWTPayloadCreate(user_id=user.id, role=user.role)
@@ -191,7 +209,9 @@ class AuthenticationService(BaseService[User]):
         except BadSignature:
             raise BadTokenError(message="Invalid reset password token")
 
-    async def continue_with_oauth(self, cmd: ContextFromProvider) -> str:
+    async def continue_with_oauth(
+        self, cmd: ContextFromProvider
+    ) -> LoginResponseSchema:
 
         user = await self.user_repo.get(UserGetByEmail(email=cmd.email))
 
@@ -215,9 +235,14 @@ class AuthenticationService(BaseService[User]):
                     ),
                     connection=tconn,
                 )
-            # Encode the JWT token and return it.
-            return self.jwt_handler.create_jwt_token(
-                payload=JWTPayloadCreate(user_id=user.id, role=user.role)
+
+            _ = await self._update_last_login(UpdateLastLogin(user_id=user.id))
+
+            return LoginResponseSchema(
+                access_token=self.jwt_handler.create_jwt_token(
+                    payload=JWTPayloadCreate(user_id=user.id, role=user.role)
+                ),
+                last_login=user.last_login,
             )
 
         provider = await self.provider_repo.get(
@@ -239,8 +264,19 @@ class AuthenticationService(BaseService[User]):
                     connection=tconn,
                 )
 
-        return self.jwt_handler.create_jwt_token(
-            payload=JWTPayloadCreate(user_id=user.id, role=user.role)
+                _ = await self._update_last_login(
+                    UpdateLastLogin(user_id=user.id), connection=tconn
+                )
+
+        # return self.jwt_handler.create_jwt_token(
+        #     payload=JWTPayloadCreate(user_id=user.id, role=user.role)
+        # )
+
+        return LoginResponseSchema(
+            access_token=self.jwt_handler.create_jwt_token(
+                payload=JWTPayloadCreate(user_id=user.id, role=user.role)
+            ),
+            last_login=user.last_login,
         )
 
     async def me(self, token: GetUserByToken) -> UserContext:

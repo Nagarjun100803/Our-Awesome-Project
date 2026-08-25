@@ -1,6 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Request
 from fastapi.responses import JSONResponse
 
 from src.api.dependencies import (
@@ -27,7 +27,11 @@ async def signup(
     auth_service: AuthenticationServiceDependency,
     email_service: EmailServiceDependency,
     background_tasks: BackgroundTasks,
+    request: Request,
 ):
+
+    origin = request.headers.get("referer")
+
     user = await auth_service.signup(
         cmd=UserCreate(name=cmd.name, email=cmd.email, password=cmd.password)
     )
@@ -41,7 +45,7 @@ async def signup(
         email_service.send_template_one,
         context=EmailVerification(
             email=cmd.email,
-            url=f"http://localhost:5173/verify-email?token={email_verification_token}",
+            url=f"{origin}verify-email?token={email_verification_token}",
             name=cmd.name,
         ),
     )

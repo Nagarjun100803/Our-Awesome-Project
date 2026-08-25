@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Request
 from fastapi.responses import JSONResponse
 
 from src.api.dependencies import AuthenticationServiceDependency, EmailServiceDependency
@@ -18,14 +18,18 @@ async def generate_set_password_token(
     auth_service: AuthenticationServiceDependency,
     email_service: EmailServiceDependency,
     background_tasks: BackgroundTasks,
+    request: Request,
 ):
     forgot_password_context = await auth_service.generate_set_password_token(cmd=cmd)
+
+    origin = request.headers.get("referer")
+    # print(origin)
 
     background_tasks.add_task(
         email_service.send_template_one,
         context=SetPassword(
             email=cmd.email,
-            url=f"http://localhost:5173/set-password?token={forgot_password_context.token}",
+            url=f"{origin}set-password?token={forgot_password_context.token}",
             name=forgot_password_context.name,
         ),
     )

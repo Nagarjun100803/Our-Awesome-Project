@@ -1,6 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Request
 from fastapi.responses import JSONResponse
 from pydantic import EmailStr
 
@@ -19,7 +19,9 @@ async def resend_email_verification(
     auth_service: AuthenticationServiceDependency,
     email_service: EmailServiceDependency,
     background_tasks: BackgroundTasks,
+    request: Request,
 ):
+    origin = request.headers.get("referer")
     email_verification_context = await auth_service.generate_email_verification_token(
         email=email
     )
@@ -28,7 +30,7 @@ async def resend_email_verification(
         email_service.send_template_one,
         context=EmailVerification(
             email=email,
-            url=f"http://localhost:5173/verify-email?token={email_verification_context.token}",
+            url=f"{origin}verify-email?token={email_verification_context.token}",
             name=email_verification_context.name,
         ),
     )

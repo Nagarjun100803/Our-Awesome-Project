@@ -11,9 +11,12 @@ router = APIRouter(tags=["oauth"])
 
 
 @router.get("/google")
-async def google_login(request: Request):  # pyright: ignore[reportUnknownParameterType]
-    redirect_uri = request.url_for("google_callback")
-    return await oauth.google.authorize_redirect(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+async def google_login(request: Request):
+    origin = request.headers.get("referer")
+    request.session["oauth_origin"] = origin
+    redirect_uri = request.url_for("google_callback")  # no query params, static path
+
+    return await oauth.google.authorize_redirect(
         request,
         redirect_uri,
         access_type="offline",
@@ -22,20 +25,18 @@ async def google_login(request: Request):  # pyright: ignore[reportUnknownParame
 
 @router.get("/google/callback", name="google_callback")
 async def google_callback(
-    request: Request, auth_service: AuthenticationServiceDependency
+    request: Request,
+    auth_service: AuthenticationServiceDependency,
 ):
     provider_name = "google"
     provider_config = OAUTHPROVIDERS[provider_name]
 
-    client = oauth.create_client(name=provider_name)  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
+    client = oauth.create_client(name=provider_name)
+    token = await client.authorize_access_token(request)
+    user = token["userinfo"]
+    name, email, sub = provider_config.extract(user)
 
-    token = await client.authorize_access_token(request)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-
-    user = token["userinfo"]  # pyright: ignore[reportUnknownVariableType]
-
-    name, email, sub = provider_config.extract(user)  # pyright: ignore[reportUnknownArgumentType]
-
-    access_token = await auth_service.continue_with_oauth(
+    cmd = await auth_service.continue_with_oauth(
         cmd=ContextFromProvider(
             provider_name=ProviderName.GOOGLE,
             name=name,
@@ -44,11 +45,21 @@ async def google_callback(
         )
     )
 
-    response = RedirectResponse(url=settings.frontend.url, status_code=302)
+    origin = request.session.pop("oauth_origin", None)
+
+    if not origin:
+        origin = settings.frontend.url
+
+    if cmd.last_login:
+        url = origin + "dashboard"
+    else:
+        url = origin + "onboarding"
+
+    response = RedirectResponse(url=url, status_code=302)
 
     response.set_cookie(
         key="access_token",
-        value=access_token,
+        value=cmd.access_token,
         httponly=True,
         secure=True,
         samesite="none",
@@ -59,6 +70,8 @@ async def google_callback(
 
 @router.get("/microsoft")
 async def microsoft_login(request: Request):  # pyright: ignore[reportUnknownParameterType]
+    origin = request.headers.get("referer")
+    request.session["oauth_origin"] = origin
     redirect_uri = request.url_for("microsoft_callback")
     return await oauth.microsoft.authorize_redirect(  # pyright: ignore[reportUnknownVariableType, reportUnknownMemberType]
         request,
@@ -82,7 +95,7 @@ async def microsoft_callback(
 
     name, email, sub = provider_config.extract(user)  # pyright: ignore[reportUnknownArgumentType]
 
-    access_token = await auth_service.continue_with_oauth(
+    cmd = await auth_service.continue_with_oauth(
         cmd=ContextFromProvider(
             provider_name=ProviderName.MICROSOFT,
             name=name,
@@ -91,11 +104,21 @@ async def microsoft_callback(
         )
     )
 
-    response = RedirectResponse(url=settings.frontend.url, status_code=302)
+    origin = request.session.pop("oauth_origin", None)
+
+    if not origin:
+        origin = settings.frontend.url
+
+    if cmd.last_login:
+        url = origin + "dashboard"
+    else:
+        url = origin + "onboarding"
+
+    response = RedirectResponse(url=url, status_code=302)
 
     response.set_cookie(
         key="access_token",
-        value=access_token,
+        value=cmd.access_token,
         httponly=True,
         secure=True,
         samesite="none",
