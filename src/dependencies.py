@@ -1,5 +1,3 @@
-from fastapi import BackgroundTasks
-
 from src.command.repositories.academic_details import AcademicDetailsRepository
 from src.command.repositories.college_lookup import CollegeLookupRepository
 from src.command.repositories.media import MediaRepository
@@ -27,6 +25,10 @@ from src.core.security.jwt import JWTHandler
 from src.core.security.password import PasswordHasher
 from src.core.storage.s3 import S3Bucket, get_session
 from src.database import DBManager
+from src.query.repositories.profile_verification import VerificationReadRepository
+from src.query.repositories.users import UserReadRepository
+from src.query.services.profile_verification import VerificationReadService
+from src.query.services.users import UserReadService
 from src.settings import settings
 
 """
@@ -131,3 +133,19 @@ user_service = UserService(
     email_service=email_service,
     password_handler=password_hasher,
 )
+
+
+"""
+Query Side Dependencies - User List
+"""
+
+user_read_repo = UserReadRepository(db=db)
+user_read_service = UserReadService(repository=user_read_repo)
+
+
+"""
+Query Side Dependencies - Profile Verification
+"""
+
+verification_read_repo = VerificationReadRepository(db=db)
+verification_read_service = VerificationReadService(verification_read_repo)

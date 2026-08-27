@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 
 from src.api.exception_registry import exception_registry
+from src.api.routes.admin import router as admin_router
 from src.api.routes.authentication import auth_router
 from src.api.routes.profile import router as profile_router
 from src.api.routes.users import router as users_router
@@ -51,6 +52,8 @@ async def root(request: Request):
 app.include_router(router=auth_router, prefix=api_prefix)
 app.include_router(router=profile_router, prefix=api_prefix)
 app.include_router(router=users_router, prefix=api_prefix)
+
+app.include_router(router=admin_router, prefix=api_prefix)
 
 
 # app.include_router(router=profile_completion_router, prefix=api_prefix)

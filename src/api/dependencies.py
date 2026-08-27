@@ -27,10 +27,14 @@ from src.dependencies import (
     personal_service,
     profile_verification_service,
     s3_bucket,
+    user_read_service,
     user_service,
+    verification_read_service,
     verify_profile_completion_service,
 )
 from src.exceptions import UnAuthenticatedError, UnAuthorizedError
+from src.query.services.profile_verification import VerificationReadService
+from src.query.services.users import UserReadService
 
 """
 1. User Context Dependency
@@ -201,3 +205,29 @@ def get_user_service() -> UserService:
 
 
 UserServiceDependency = Annotated[UserService, Depends(get_user_service)]
+
+
+"""
+Query Side Dependencies - User List
+"""
+
+
+def get_user_read_service() -> UserReadService:
+    return user_read_service
+
+
+UserReadServiceDependency = Annotated[UserReadService, Depends(get_user_read_service)]
+
+
+"""
+Query Side Dependencies - Profile Verification
+"""
+
+
+def get_verification_read_service() -> VerificationReadService:
+    return verification_read_service
+
+
+VerificationReadServiceDependency = Annotated[
+    VerificationReadService, Depends(get_verification_read_service)
+]
