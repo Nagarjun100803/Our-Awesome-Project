@@ -7,7 +7,7 @@ from pydantic.fields import computed_field
 
 from src.command.commands.base import BaseCmd
 from src.command.commands.users import UserRole
-from src.query.dto.base import PageMeta, Sort, user_table
+from src.query.dto.base import PageMeta, Sort
 
 
 class UserDTO(BaseCmd):
@@ -15,7 +15,7 @@ class UserDTO(BaseCmd):
     name: Annotated[str, Field(description="User name")]
     email: Annotated[str, Field(description="User email")]
     role: Annotated[UserRole, Field(description="User role")]
-    sequence_number: Annotated[int, Field(description="Sequence number")]
+    sequence_number: Annotated[int, Field(description="Sequence number", exclude=True)]
     created_at: Annotated[datetime, Field(description="Created at")]
     last_login: Annotated[datetime | None, Field(description="Last login")] = None
     # display_id: Annotated[str | None, Field(description="Display ID")] = None

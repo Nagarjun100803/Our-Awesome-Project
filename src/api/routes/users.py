@@ -2,12 +2,12 @@ from fastapi import APIRouter, Request
 
 from src.api.dependencies import UserContextDependency, UserServiceDependency
 from src.api.schemas.users import UserCreateSchema
-from src.command.commands.users import UserCreate
+from src.command.commands.users import User, UserCreate
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@router.post("/")
+@router.post("/", status_code=200, response_model=User)
 async def create_user(
     cmd: UserCreateSchema,
     user_service: UserServiceDependency,

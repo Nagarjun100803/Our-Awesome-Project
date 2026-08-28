@@ -26,6 +26,9 @@ class ProfileVerification(BaseCmd):
     remarks: Annotated[
         str | None, Field(description="Profile verification - Remarks")
     ] = None
+    verified_by: Annotated[
+        UUID | None, Field(description="Profile verification - Verified by")
+    ] = None
 
 
 class ProfileVerificationCreate(ProfileVerification):
@@ -33,11 +36,13 @@ class ProfileVerificationCreate(ProfileVerification):
 
 
 class ProfileVerificationUpdate(BaseCmd):
+    id: Annotated[UUID, Field(description="user_id")]
     status: Annotated[
         ProfileVerificationStatusEnum,
         Field(description="Profile verification - Status"),
     ]
     remarks: Annotated[str, Field(description="Profile verification - Remarks")]
+    verified_by: Annotated[UUID, Field(description="Profile verification - Updated by")]
     updated_by: Annotated[UUID, Field(description="Profile verification - Updated by")]
 
 
@@ -48,3 +53,12 @@ class ProfileVerificationDelete(BaseCmd):
 
 class ProfileVerificationGet(BaseCmd):
     id: Annotated[UUID, Field(description="Profile verification - User ID")]
+
+
+class ProfileVerify(BaseCmd):
+    id: Annotated[UUID, Field(description="student id")]
+    status: Annotated[
+        ProfileVerificationStatusEnum, Field(description="Approved | Rejected")
+    ]
+    remarks: Annotated[str, Field(description="what is the reason for the status")]
+    verified_by: Annotated[UUID, Field(description="who done this verification")]

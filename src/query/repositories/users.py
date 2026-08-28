@@ -4,7 +4,6 @@ from pypika.queries import QueryBuilder
 
 from src.database import DBManager, ExecutableSQL
 from src.query.dto.base import PageMeta, Paginated
-from src.query.dto.profile_verification import VerificationDTO
 from src.query.dto.users import UserDTO, UserFilters
 from src.query.repositories.mixins import PaginatorMixin
 
@@ -67,7 +66,7 @@ class UserReadRepository(PaginatorMixin):
         self,
         filters: UserFilters,
         connection: Connection | None = None,
-    ):
+    ) -> list[UserDTO]:
         tablename = Table("users")
         query = PostgreSQLQuery.from_(tablename).select(
             tablename.id,

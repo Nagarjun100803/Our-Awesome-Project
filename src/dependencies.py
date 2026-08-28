@@ -148,4 +148,6 @@ Query Side Dependencies - Profile Verification
 """
 
 verification_read_repo = VerificationReadRepository(db=db)
-verification_read_service = VerificationReadService(verification_read_repo)
+verification_read_service = VerificationReadService(
+    verification_repo=verification_read_repo, file_service=s3_bucket
+)

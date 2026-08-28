@@ -10,6 +10,7 @@ from src.api.exception_registry import exception_registry
 from src.api.routes.admin import router as admin_router
 from src.api.routes.authentication import auth_router
 from src.api.routes.profile import router as profile_router
+from src.api.routes.profile_verification import router as verification_router
 from src.api.routes.users import router as users_router
 from src.dependencies import db
 from src.exceptions import DomainException
@@ -52,6 +53,8 @@ async def root(request: Request):
 app.include_router(router=auth_router, prefix=api_prefix)
 app.include_router(router=profile_router, prefix=api_prefix)
 app.include_router(router=users_router, prefix=api_prefix)
+
+app.include_router(router=verification_router, prefix=api_prefix)
 
 app.include_router(router=admin_router, prefix=api_prefix)
 

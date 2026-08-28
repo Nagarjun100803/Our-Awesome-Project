@@ -14,6 +14,8 @@ from src.command.commands.profile_verification import (
     ProfileVerification,
     ProfileVerificationCreate,
     ProfileVerificationGet,
+    ProfileVerificationUpdate,
+    ProfileVerify,
 )
 from src.command.repositories.profile_verification import ProfileVerificationRepository
 from src.command.services.base import BaseService
@@ -134,4 +136,21 @@ class ProfileVerificationService(BaseService[ProfileVerification]):
     ) -> None:
         _ = self.media_service._require_entity(
             await self.media_service.update(cmd, connection)
+        )
+
+    async def update_status(
+        self, cmd: ProfileVerify, connection: Connection | None = None
+    ) -> ProfileVerification:
+
+        return self._require_entity(
+            await self.repo.update(
+                cmd=ProfileVerificationUpdate(
+                    id=cmd.id,
+                    status=cmd.status,
+                    remarks=cmd.remarks,
+                    updated_by=cmd.verified_by,
+                    verified_by=cmd.verified_by,
+                ),
+                connection=connection,
+            )
         )
