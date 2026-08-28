@@ -112,8 +112,8 @@ class BaseRepository[T](ABC):
         "Updates an existing record in the database."
 
         table = Table(self.tablename)
-        id = self._validate_id(getattr(cmd, "id"))
-        updated_id = self._validate_id(getattr(cmd, "updated_by"))
+        id = self._validate_id(getattr(cmd, "id", None))
+        updated_id = self._validate_id(getattr(cmd, "updated_by", None))
 
         data_dict = cmd.model_dump(exclude={"id", "updated_by"}, exclude_none=True)
         update_query = PostgreSQLQuery.update(table).where(
@@ -155,8 +155,8 @@ class BaseRepository[T](ABC):
 
         table = Table(self.tablename)
 
-        id = self._validate_id(getattr(cmd, "id"))
-        deleted_by = self._validate_id(getattr(cmd, "deleted_by"))
+        id = self._validate_id(getattr(cmd, "id", None))
+        deleted_by = self._validate_id(getattr(cmd, "deleted_by", None))
 
         delete_query = (
             PostgreSQLQuery.update(table)
@@ -184,7 +184,7 @@ class BaseRepository[T](ABC):
         Retrieves a single record from the database.
         """
 
-        id = self._validate_id(getattr(query, "id"))
+        id = self._validate_id(getattr(query, "id", None))
 
         table = Table(self.tablename)
         sql = (

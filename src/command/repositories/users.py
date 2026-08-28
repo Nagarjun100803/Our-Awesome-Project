@@ -1,11 +1,11 @@
-import asyncio
 from typing import Any, ClassVar, override
 
 from asyncpg import Connection
 from asyncpg.protocol.record import Record
 from pydantic import BaseModel
-from pypika import Criterion, Parameter, PostgreSQLQuery, Table
+from pypika import Criterion, Parameter, PostgreSQLQuery, Table, functions
 
+from src.command.commands.authentication import UpdateLastLogin
 from src.command.commands.users import (
     User,
     UserCreate,
@@ -14,7 +14,7 @@ from src.command.commands.users import (
     UserUpdate,
 )
 from src.command.repositories.base import BaseRepository
-from src.database import DBManager, ExecutableSQL
+from src.database import ExecutableSQL
 
 
 class UserRepository(BaseRepository[User]):
@@ -39,6 +39,37 @@ class UserRepository(BaseRepository[User]):
 
         cmd = self._normalize(cmd=cmd, model=UserUpdate)
         return await super().update(cmd=cmd, connection=connection)
+
+    async def update_last_login(
+        self, cmd: BaseModel, connection: Connection | None = None
+    ) -> User | None:
+        cmd = self._normalize(cmd=cmd, model=UpdateLastLogin)
+
+        "Updates the last login timestamp for a user in the database."
+
+        table = Table(self.tablename)
+        id = self._validate_id(getattr(cmd, "user_id", None))
+        updated_id = self._validate_id(getattr(cmd, "user_id", None))
+
+        update_query = PostgreSQLQuery.update(table).where(
+            Criterion.all(
+                terms=[table.id == Parameter("$1"), table.deleted_at.isnull()]
+            )
+        )
+
+        values = [id]
+        # Set updated_at to current timestamp
+        update_query = update_query.set("updated_at", functions.Now())
+        update_query = update_query.set("last_login", functions.Now())
+        update_query = update_query.set("updated_by", updated_id)
+        update_query: Any = update_query.returning("*")  # type: ignore
+        sql: str = update_query.get_sql()
+
+        executable = ExecutableSQL(sql=sql, values=tuple(values))
+
+        result = await self.db.execute(executable, fetch_returns="one")
+
+        return self._to_domain(result)
 
     async def delete(
         self, cmd: BaseModel, connection: Connection | None = None
@@ -81,48 +112,3 @@ class UserRepository(BaseRepository[User]):
         """Checks if a user exists in the repository by the given filters."""
 
         return await super().exists_by(connection, **filters)
-
-
-async def main():
-
-    db = DBManager()
-    await db.init_pool()
-
-    repo = UserRepository(db=db)
-    # user = await repo.add(
-    #     UserCreate(name="praveen", email="234asdf11123@gmail.com", password=None), None
-    # )
-
-    user = await repo.pick(
-        columns=["id", "name", "email"],
-        fetch_all=False,
-        connection=None,
-        name="ARUL",
-    )
-
-    # user_update = await repo.update(
-    #     UserUpdate(
-    #         id=UUID("06acb0eb-94cd-42ba-9c82-99319954be78"),
-    #         password="23421",
-    #         updated_by=UUID("06acb0eb-94cd-42ba-9c82-99319954be78"),
-    #     ),
-    #     None,
-    # )
-
-    # exists = await repo.exists_by(
-    #     email="234adf11123@gmail.com", id=UUID("06acb0eb-94cd-42ba-9c82-99319954be78")
-    # )
-
-    # user = await repo.get(
-    #     query=UserGetById(id=UUID("06acb0eb-94cd-42ba-9c82-99319954be78"))
-    # )
-    await db.close_pool()
-    print(user)
-
-    # print("---update----", user_update)
-
-    # print("----exists---", exists)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())

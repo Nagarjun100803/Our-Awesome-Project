@@ -7,13 +7,17 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 
 from src.api.exception_registry import exception_registry
+from src.api.routes.admin import router as admin_router
 from src.api.routes.authentication import auth_router
+from src.api.routes.profile import router as profile_router
+from src.api.routes.profile_verification import router as verification_router
+from src.api.routes.users import router as users_router
 from src.dependencies import db
 from src.exceptions import DomainException
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI):  # pyright: ignore[reportUnusedParameter]
     await db.init_pool()
     yield
     await db.close_pool()
@@ -37,12 +41,25 @@ app.add_middleware(
 )
 app.add_middleware(SessionMiddleware, secret_key="some-secret-key")
 
+
+@app.get(f"{api_prefix}/health-check", tags=["Health Check"], status_code=200)
+async def root(request: Request):
+
+    origin = request.headers.get("referer")
+    print(origin)
+    return {"message": "Server is running"}
+
+
 app.include_router(router=auth_router, prefix=api_prefix)
+app.include_router(router=profile_router, prefix=api_prefix)
+app.include_router(router=users_router, prefix=api_prefix)
+
+app.include_router(router=verification_router, prefix=api_prefix)
+
+app.include_router(router=admin_router, prefix=api_prefix)
 
 
-@app.get(f"{api_prefix}/")
-async def root():
-    return {"message": "Hello, World!"}
+# app.include_router(router=profile_completion_router, prefix=api_prefix)
 
 
 @app.exception_handler(DomainException)
@@ -58,6 +75,10 @@ def domain_exception_handler(request: Request, exc: DomainException) -> JSONResp
         status_code=status_code,
         content={
             "sucess": False,
-            "error": {"message": exc.message, "type": exc.__class__.__name__},
+            "error": {
+                "message": exc.message,
+                "type": exc.__class__.__name__,
+                "error_code": exc.error_code,
+            },
         },
     )

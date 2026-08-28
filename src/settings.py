@@ -9,7 +9,7 @@ It layer only responsible for env values.
 
 from typing import Annotated
 
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import BaseModel, EmailStr, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -86,6 +86,51 @@ class DatabaseSettings(BaseSettings):
     )
 
 
+class PincodeSettings(BaseSettings):
+    api_url: str
+
+    model_config = SettingsConfigDict(
+        env_file="src/.env", env_prefix="PINCODE_", extra="ignore"
+    )
+
+
+class SupabaseSettings(BaseSettings):
+    url: str
+    publishable_key: str
+    secret_key: SecretStr
+    jwks_url: str
+
+    model_config = SettingsConfigDict(
+        env_file="src/.env", env_prefix="SUPABASE_", extra="ignore"
+    )
+
+
+class S3Settings(BaseSettings):
+    endpoint_url: str
+    region: str
+    access_key_id: str
+    secret_access_key: SecretStr
+    bucket: str
+
+    model_config = SettingsConfigDict(
+        env_file="src/.env", env_prefix="S3_", extra="ignore"
+    )
+
+
+class EmailSettings(BaseSettings):
+    smtp_host: str
+    smtp_port: int
+    smtp_username: str
+    smtp_password: SecretStr
+    start_tls: bool
+    from_name: str
+    from_email: EmailStr
+
+    model_config = SettingsConfigDict(
+        env_file="src/.env", env_prefix="EMAIL_", extra="ignore"
+    )
+
+
 class Settings(BaseModel):
     database: Annotated[DatabaseSettings, Field(default_factory=DatabaseSettings)]  # type: ignore[arg-type]
     jwt: Annotated[JWTSettings, Field(default_factory=JWTSettings)]  # type: ignore[arg-type]
@@ -99,6 +144,12 @@ class Settings(BaseModel):
         EmailVerification, Field(default_factory=EmailVerification)  # type: ignore[arg-type]
     ]
     frontend: Annotated[FrontendSettings, Field(default_factory=FrontendSettings)]  # type: ignore[arg-type]
+    # pincode: Annotated[PincodeSettings, Field(default_factory=PincodeSettings)]  # type: ignore[arg-type]
+
+    pincode: Annotated[PincodeSettings, Field(default_factory=PincodeSettings)]  # type: ignore[arg-type]
+    supabase: Annotated[SupabaseSettings, Field(default_factory=SupabaseSettings)]  # type: ignore[arg-type]
+    s3: Annotated[S3Settings, Field(default_factory=S3Settings)]  # type: ignore[arg-type]
+    email: Annotated[EmailSettings, Field(default_factory=EmailSettings)]  # type: ignore[arg-type]
 
 
 settings = Settings()  # type: ignore[call-arg]

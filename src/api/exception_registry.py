@@ -13,4 +13,5 @@ exception_registry: dict[type[exc.DomainException], HTTPStatus] = {
     exc.NotFoundException: HTTPStatus.NOT_FOUND,  # 404
     exc.ConflictException: HTTPStatus.CONFLICT,  # 409
     exc.SecurityException: HTTPStatus.UNAUTHORIZED,  # 401
+    exc.ExternalServiceException: HTTPStatus.SERVICE_UNAVAILABLE,  # 503
 }

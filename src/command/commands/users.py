@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import StrEnum
 from typing import Annotated
 from uuid import UUID
@@ -29,6 +30,9 @@ class UserCreate(BaseCmd):
     email_verified: Annotated[
         bool, Field(description="Whether the user's email is verified")
     ] = False
+    last_login: Annotated[
+        datetime | None, Field(description="User's last login timestamp")
+    ] = None
 
 
 class User(UserCreate):

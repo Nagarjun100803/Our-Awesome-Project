@@ -12,10 +12,10 @@ from src.command.commands.providers import (
     ProviderGet,
 )
 from src.command.repositories.base import BaseRepository
-from src.database import DBManager, ExecutableSQL
+from src.database import ExecutableSQL
 
 
-class ProviderRepository(BaseRepository):
+class ProviderRepository(BaseRepository[Provider]):
     tablename: ClassVar[str] = "providers"
 
     @override
@@ -99,16 +99,3 @@ class ProviderRepository(BaseRepository):
             fetch_returns="none",
             connection=connection,
         )
-
-
-async def main():
-    db = DBManager()
-    await db.init_pool()
-
-    await db.close_pool()
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(main())
